@@ -1,0 +1,89 @@
+/* Shared base styles for all vue-resource field components.
+   Imported via @import in each field component's <style> block.
+   Selectors use .vue-resource.field (both on the same element) so styles
+   are scoped to the component root and do not cascade into custom layouts. */
+
+/* ── Wrapper ── */
+.vue-resource.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+  font-family: var(--prince-font-family, system-ui, -apple-system, sans-serif);
+  font-size: var(--prince-font-size-base, 0.875rem);
+  color: var(--prince-color-text, #212529);
+}
+
+/* ── Label ── */
+.vue-resource.field > label {
+  font-size: var(--prince-font-size-sm, 0.8125rem);
+  font-weight: 500;
+  color: var(--prince-color-label, #495057);
+  line-height: 1.4;
+}
+
+/* ── Editable controls ── */
+.vue-resource.field > input,
+.vue-resource.field > textarea,
+.vue-resource.field > select {
+  padding: 8px 12px;
+  border: 1px solid var(--prince-color-border, #dee2e6);
+  border-radius: var(--prince-radius-sm, 4px);
+  background: var(--prince-color-bg, #ffffff);
+  color: var(--prince-color-text, #212529);
+  font-family: inherit;
+  font-size: var(--prince-font-size-base, 0.875rem);
+  line-height: 1.5;
+  width: 100%;
+  box-sizing: border-box;
+  transition:
+    border-color var(--prince-transition, 150ms ease),
+    box-shadow var(--prince-transition, 150ms ease);
+}
+
+.vue-resource.field > input:focus,
+.vue-resource.field > textarea:focus,
+.vue-resource.field > select:focus {
+  outline: none;
+  border-color: var(--prince-color-border-focus, #4a90d9);
+  box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.15);
+}
+
+.vue-resource.field > input:disabled,
+.vue-resource.field > textarea:disabled,
+.vue-resource.field > select:disabled {
+  background: var(--prince-color-surface, #f8f9fa);
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
+/* ── Read-only display value ── */
+.vue-resource.field .field-value {
+  display: block;
+  padding: 4px 0;
+  font-size: var(--prince-font-size-base, 0.875rem);
+  color: var(--prince-color-text, #212529);
+  min-height: 1.5em;
+}
+
+/* ── Boolean display ── */
+.vue-resource.field .boolean--true {
+  color: var(--prince-color-bool-true, #198754);
+  font-weight: 600;
+}
+
+.vue-resource.field .boolean--false {
+  color: var(--prince-color-bool-false, #dc3545);
+  font-weight: 600;
+}
+
+/* ── Enum badge display ── */
+.vue-resource.field .enum {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--prince-radius-sm, 4px);
+  background: var(--prince-color-surface, #f8f9fa);
+  border: 1px solid var(--prince-color-border, #dee2e6);
+  font-size: var(--prince-font-size-sm, 0.8125rem);
+  color: var(--prince-color-text, #212529);
+}

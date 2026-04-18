@@ -1,0 +1,67 @@
+/**
+ * vue-resource design tokens
+ *
+ * Import once in your app entry (e.g. main.ts) to enable CSS variable overrides:
+ *   import '@/libs/vue-resource/ui/prince.css'
+ *
+ * All built-in components use var(--prince-*, fallback) so they work even
+ * without this file imported — the fallback values are always present.
+ */
+
+:root {
+  /* Backgrounds */
+  --prince-color-bg: #ffffff;
+  --prince-color-surface: #f8f9fa;
+
+  /* Borders */
+  --prince-color-border: #dee2e6;
+  --prince-color-border-focus: #4a90d9;
+
+  /* Text */
+  --prince-color-text: #212529;
+  --prince-color-text-muted: #6c757d;
+  --prince-color-label: #495057;
+
+  /* Primary action */
+  --prince-color-primary: #2563eb;
+  --prince-color-primary-text: #ffffff;
+  --prince-color-primary-hover: #1d4ed8;
+
+  /* Secondary / neutral action */
+  --prince-color-secondary: #e9ecef;
+  --prince-color-secondary-text: #212529;
+  --prince-color-secondary-hover: #ced4da;
+
+  /* Danger action */
+  --prince-color-danger: #dc3545;
+  --prince-color-danger-text: #ffffff;
+  --prince-color-danger-hover: #b02a37;
+
+  /* Semantic boolean display */
+  --prince-color-bool-true: #198754;
+  --prince-color-bool-false: #dc3545;
+
+  /* Spacing */
+  --prince-space-xs: 4px;
+  --prince-space-sm: 8px;
+  --prince-space-md: 12px;
+  --prince-space-lg: 16px;
+  --prince-space-xl: 24px;
+
+  /* Typography */
+  --prince-font-family: system-ui, -apple-system, sans-serif;
+  --prince-font-size-sm: 0.8125rem; /* 13px */
+  --prince-font-size-base: 0.875rem; /* 14px */
+  --prince-font-size-lg: 1rem; /* 16px */
+
+  /* Shape */
+  --prince-radius-sm: 4px;
+  --prince-radius-lg: 8px;
+
+  /* Elevation */
+  --prince-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --prince-shadow-dropdown: 0 4px 12px rgba(0, 0, 0, 0.12);
+
+  /* Motion */
+  --prince-transition: 150ms ease;
+}
