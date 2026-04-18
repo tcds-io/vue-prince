@@ -25,6 +25,7 @@
       :schema="schema"
       :labels="labels"
       :fields="route.meta.spec?.fields"
+      :resource-label-map="labelMap"
       :resource="route.meta.spec?.name"
       :loading="store.loading"
       :error="store.error"
@@ -73,7 +74,7 @@ import type { ResourceListPageProps } from '../page-props'
 import PrinceButton from '../ui/PrinceButton.vue'
 import PrinceCard from '../ui/PrinceCard.vue'
 import ResourceListView from '../ui/ResourceListView.vue'
-import { useResourceLabels, useResourceSchema } from './useResourceMeta'
+import { useResourceLabels, useResourceLabelMap, useResourceSchema } from './useResourceMeta'
 
 const route = useRoute()
 const router = useRouter()
@@ -159,6 +160,11 @@ const searchComponent = computed(() => route.meta.spec?.components?.search)
 
 const items = computed(() => store.list as ResourceListItem<Record<string, unknown>>[])
 
+const { labelMap } = useResourceLabelMap(
+  () => items.value,
+  () => route.meta.spec?.fields,
+)
+
 const customProps = computed<ResourceListPageProps>(() => ({
   items: items.value,
   schema: schema.value,
@@ -174,6 +180,7 @@ const customProps = computed<ResourceListPageProps>(() => ({
   goToPage,
   createNew,
   onSearch: scheduleSearch,
+  resourceLabelMap: labelMap.value,
 }))
 </script>
 

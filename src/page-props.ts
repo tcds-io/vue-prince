@@ -16,6 +16,7 @@ export interface ResourceListPageProps<T = Record<string, unknown>> {
   goToPage: (p: number) => void
   createNew: () => void
   onSearch: (params: Record<string, string>) => void
+  resourceLabelMap?: Record<string, Record<string, string>>
 }
 
 export interface ResourceViewPageProps {
