@@ -24,4 +24,12 @@ export default tseslint.config(
       'vue/html-self-closing': 'off',
     },
   },
+  {
+    files: ['tests/**'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      'vue/one-component-per-file': 'off',
+      'vue/require-prop-types': 'off',
+    },
+  },
 )
