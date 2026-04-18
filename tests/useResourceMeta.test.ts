@@ -1,7 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ref } from 'vue'
 import { flushPromises } from '@vue/test-utils'
-import { useResourceSchema, useResourceLabels, useResourceLabelMap } from '../src/pages/useResourceMeta'
+import {
+  useResourceSchema,
+  useResourceLabels,
+  useResourceLabelMap,
+} from '../src/pages/useResourceMeta'
 
 vi.mock('vue-router', () => ({ useRoute: vi.fn() }))
 vi.mock('../src/resource-api', () => ({ createResourceApi: vi.fn() }))
@@ -119,7 +123,10 @@ describe('useResourceLabelMap', () => {
       { id: 10, company_id: 1, _resource: 'order' },
       { id: 11, company_id: 2, _resource: 'order' },
     ] as any[]
-    const { labelMap } = useResourceLabelMap(() => items, () => specFields)
+    const { labelMap } = useResourceLabelMap(
+      () => items,
+      () => specFields,
+    )
     await flushPromises()
     expect(labelMap.value['company_id']['1']).toBe('Acme')
     expect(labelMap.value['company_id']['2']).toBe('Beta')
@@ -133,17 +140,26 @@ describe('useResourceLabelMap', () => {
       { id: 2, company_id: 3, _resource: 'order' },
       { id: 3, company_id: 5, _resource: 'order' },
     ] as any[]
-    useResourceLabelMap(() => items, () => specFields)
+    useResourceLabelMap(
+      () => items,
+      () => specFields,
+    )
     await flushPromises()
     const calledWith = mockList.mock.calls[0][0] as Record<string, string>
-    const ids = calledWith.id.split(',').map(Number).sort((a, b) => a - b)
+    const ids = calledWith.id
+      .split(',')
+      .map(Number)
+      .sort((a, b) => a - b)
     expect(ids).toEqual([3, 5])
   })
 
   it('skips fetch when items is empty', async () => {
     const mockList = vi.fn()
     vi.mocked(createResourceApi).mockReturnValue({ list: mockList } as any)
-    useResourceLabelMap(() => [], () => specFields)
+    useResourceLabelMap(
+      () => [],
+      () => specFields,
+    )
     await flushPromises()
     expect(mockList).not.toHaveBeenCalled()
   })
@@ -153,7 +169,10 @@ describe('useResourceLabelMap', () => {
     vi.mocked(createResourceApi).mockReturnValue({ list: mockList } as any)
     const plainFields = { name: { type: 'string' as const } }
     const items = [{ id: 1, name: 'foo', _resource: 'x' }] as any[]
-    useResourceLabelMap(() => items, () => plainFields)
+    useResourceLabelMap(
+      () => items,
+      () => plainFields,
+    )
     await flushPromises()
     expect(mockList).not.toHaveBeenCalled()
   })
@@ -162,7 +181,10 @@ describe('useResourceLabelMap', () => {
     const mockList = vi.fn()
     vi.mocked(createResourceApi).mockReturnValue({ list: mockList } as any)
     const items = [{ id: 1, _resource: 'x' }] as any[]
-    useResourceLabelMap(() => items, () => undefined)
+    useResourceLabelMap(
+      () => items,
+      () => undefined,
+    )
     await flushPromises()
     expect(mockList).not.toHaveBeenCalled()
   })
@@ -173,13 +195,13 @@ describe('useResourceLabelMap', () => {
     } as any)
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const items = [{ id: 1, company_id: 9, _resource: 'order' }] as any[]
-    const { labelMap } = useResourceLabelMap(() => items, () => specFields)
+    const { labelMap } = useResourceLabelMap(
+      () => items,
+      () => specFields,
+    )
     await flushPromises()
     expect(labelMap.value['company_id']).toBeUndefined()
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('company_id'),
-      expect.any(Error),
-    )
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('company_id'), expect.any(Error))
     warnSpy.mockRestore()
   })
 
@@ -190,7 +212,10 @@ describe('useResourceLabelMap', () => {
     })
     vi.mocked(createResourceApi).mockReturnValue({ list: mockList } as any)
     const itemsRef = ref([{ id: 10, company_id: 1, _resource: 'order' }] as any[])
-    useResourceLabelMap(() => itemsRef.value, () => specFields)
+    useResourceLabelMap(
+      () => itemsRef.value,
+      () => specFields,
+    )
     await flushPromises()
     // same ID, different row
     itemsRef.value = [
@@ -208,7 +233,10 @@ describe('useResourceLabelMap', () => {
       list: vi.fn().mockResolvedValue({ data: [{ id: 42, _resource: 'tag' }], meta: {} }),
     } as any)
     const items = [{ id: 1, tag_id: 42, _resource: 'post' }] as any[]
-    const { labelMap } = useResourceLabelMap(() => items, () => fieldsWithoutTitle)
+    const { labelMap } = useResourceLabelMap(
+      () => items,
+      () => fieldsWithoutTitle,
+    )
     await flushPromises()
     expect(labelMap.value['tag_id']['42']).toBe('42')
   })

@@ -71,6 +71,8 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { ResourceListItem, ResourceSchemaField } from '../api'
 import type { ResourceListPageProps } from '../page-props'
+import type { ResourceFieldDef } from '../resource'
+import { isResourceRef } from '../resource'
 import PrinceButton from '../ui/PrinceButton.vue'
 import PrinceCard from '../ui/PrinceCard.vue'
 import ResourceListView from '../ui/ResourceListView.vue'
@@ -165,11 +167,32 @@ const { labelMap } = useResourceLabelMap(
   () => route.meta.spec?.fields,
 )
 
+const enrichedFields = computed(() => {
+  const specFields = route.meta.spec?.fields
+  if (!specFields) return specFields
+  const result: Record<string, ResourceFieldDef> = {}
+  for (const [name, def] of Object.entries(specFields)) {
+    if (isResourceRef(def.type) && !def.list?.formatter) {
+      const map = labelMap.value
+      result[name] = {
+        ...def,
+        list: {
+          ...def.list,
+          formatter: (id) => (id != null ? (map[name]?.[String(id)] ?? String(id)) : '—'),
+        },
+      }
+    } else {
+      result[name] = def
+    }
+  }
+  return result
+})
+
 const customProps = computed<ResourceListPageProps>(() => ({
   items: items.value,
   schema: schema.value,
   labels: labels.value,
-  fields: route.meta.spec?.fields,
+  fields: enrichedFields.value,
   resource: route.meta.spec?.name,
   loading: store.loading,
   error: store.error,
@@ -180,7 +203,6 @@ const customProps = computed<ResourceListPageProps>(() => ({
   goToPage,
   createNew,
   onSearch: scheduleSearch,
-  resourceLabelMap: labelMap.value,
 }))
 </script>
 

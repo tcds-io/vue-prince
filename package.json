@@ -33,6 +33,7 @@
     "@vitejs/plugin-vue": "^5.2.0",
     "@vue/test-utils": "^2.4.0",
     "eslint": "^10.2.0",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-vue": "^10.8.0",
     "jsdom": "^25.0.0",
     "pinia": "^2.3.0",

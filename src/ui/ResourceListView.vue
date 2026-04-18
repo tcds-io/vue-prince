@@ -39,7 +39,7 @@
                 :style="tdStyle(field.name)"
               >
                 {{
-                  props.resourceLabelMap?.[field.name]?.[String(item[field.name])] ??
+                  props.fields?.[field.name]?.list?.formatter?.(item[field.name]) ??
                   item[field.name]
                 }}
               </td>
@@ -83,8 +83,7 @@
               :style="tdStyle(field.name)"
             >
               {{
-                props.resourceLabelMap?.[field.name]?.[String(item[field.name])] ??
-                item[field.name]
+                props.fields?.[field.name]?.list?.formatter?.(item[field.name]) ?? item[field.name]
               }}
             </td>
           </tr>
@@ -105,7 +104,6 @@ const props = defineProps<{
   schema: ResourceSchemaField[]
   labels?: Record<string, string>
   fields?: Record<string, ResourceFieldDef>
-  resourceLabelMap?: Record<string, Record<string, string>>
   resource?: string
   loading: boolean
   error: string | null

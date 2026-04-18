@@ -23,6 +23,7 @@ export type ResourceFieldDefList = {
   show?: boolean
   align?: 'left' | 'center' | 'right'
   width?: number
+  formatter?: (value: unknown) => string
 }
 export type ResourceFieldDefForm = {
   readOnly?: boolean
