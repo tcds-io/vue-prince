@@ -124,7 +124,9 @@ describe('ResourceListPage', () => {
     it('row click on ResourceListView navigates to detail', async () => {
       const wrapper = mountPage()
       await flushPromises()
-      const onRowClick = wrapper.findComponent(ResourceListView).props('onRowClick') as Function
+      const onRowClick = wrapper.findComponent(ResourceListView).props('onRowClick') as (
+        item: Record<string, unknown>,
+      ) => void
       onRowClick({ id: 5 })
       expect(mockPush).toHaveBeenCalledWith({ name: 'companies-detail', params: { id: '5' } })
     })
