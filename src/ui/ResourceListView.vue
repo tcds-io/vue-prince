@@ -38,7 +38,10 @@
                 ]"
                 :style="tdStyle(field.name)"
               >
-                {{ item[field.name] }}
+                {{
+                  props.fields?.[field.name]?.list?.formatter?.(item[field.name]) ??
+                  item[field.name]
+                }}
               </td>
             </tr>
           </tbody>
@@ -79,7 +82,9 @@
               ]"
               :style="tdStyle(field.name)"
             >
-              {{ item[field.name] }}
+              {{
+                props.fields?.[field.name]?.list?.formatter?.(item[field.name]) ?? item[field.name]
+              }}
             </td>
           </tr>
         </tbody>

@@ -1,6 +1,9 @@
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import type { ResourceSchemaField } from '../api'
+import type { ResourceListItem, ResourceSchemaField } from '../api'
+import type { ResourceFieldDef, ResourceSpec } from '../resource'
+import { isResourceRef } from '../resource'
+import { createResourceApi } from '../resource-api'
 
 /**
  * Resolves the schema to render for a resource page.
@@ -44,6 +47,60 @@ export function useResourceSchema(
 
     return result
   })
+}
+
+/**
+ * Batch-loads display labels for all resource-reference fields in a list.
+ *
+ * Returns a reactive map: field name → (stringified ID → resolved title).
+ * Falls back to the raw ID string if the fetch fails for any field.
+ * Incrementally caches: IDs already resolved are not re-fetched on page change.
+ */
+export function useResourceLabelMap(
+  getItems: () => ResourceListItem<Record<string, unknown>>[],
+  getSpecFields: () => Record<string, ResourceFieldDef> | undefined,
+) {
+  const labelMap = ref<Record<string, Record<string, string>>>({})
+
+  watch(
+    [() => getItems(), () => getSpecFields()],
+    async ([items, specFields]) => {
+      if (!specFields || !items.length) return
+
+      const refFields = Object.entries(specFields).filter(([, def]) => isResourceRef(def.type))
+      if (!refFields.length) return
+
+      await Promise.allSettled(
+        refFields.map(async ([fieldName, def]) => {
+          const refSpec = def.type as ResourceSpec
+          const existing = labelMap.value[fieldName] ?? {}
+          const newIds = [
+            ...new Set(
+              items
+                .map((item) => item[fieldName])
+                .filter((id) => id != null && !existing[String(id)]),
+            ),
+          ]
+          if (!newIds.length) return
+
+          try {
+            const res = await createResourceApi(refSpec).list({ id: newIds.join(',') })
+            const titleFn = refSpec.title ?? ((item: Record<string, unknown>) => String(item.id))
+            const entries = res.data.map((item) => [String(item.id), titleFn(item)])
+            labelMap.value = {
+              ...labelMap.value,
+              [fieldName]: { ...existing, ...Object.fromEntries(entries) },
+            }
+          } catch (err) {
+            console.warn(`[vue-prince] Failed to resolve labels for "${fieldName}":`, err)
+          }
+        }),
+      )
+    },
+    { immediate: true },
+  )
+
+  return { labelMap }
 }
 
 /** Extracts label overrides from spec.fields for use in view/form components. */

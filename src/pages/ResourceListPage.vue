@@ -25,6 +25,7 @@
       :schema="schema"
       :labels="labels"
       :fields="route.meta.spec?.fields"
+      :resource-label-map="labelMap"
       :resource="route.meta.spec?.name"
       :loading="store.loading"
       :error="store.error"
@@ -70,10 +71,12 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { ResourceListItem, ResourceSchemaField } from '../api'
 import type { ResourceListPageProps } from '../page-props'
+import type { ResourceFieldDef } from '../resource'
+import { isResourceRef } from '../resource'
 import PrinceButton from '../ui/PrinceButton.vue'
 import PrinceCard from '../ui/PrinceCard.vue'
 import ResourceListView from '../ui/ResourceListView.vue'
-import { useResourceLabels, useResourceSchema } from './useResourceMeta'
+import { useResourceLabels, useResourceLabelMap, useResourceSchema } from './useResourceMeta'
 
 const route = useRoute()
 const router = useRouter()
@@ -159,11 +162,37 @@ const searchComponent = computed(() => route.meta.spec?.components?.search)
 
 const items = computed(() => store.list as ResourceListItem<Record<string, unknown>>[])
 
+const { labelMap } = useResourceLabelMap(
+  () => items.value,
+  () => route.meta.spec?.fields,
+)
+
+const enrichedFields = computed(() => {
+  const specFields = route.meta.spec?.fields
+  if (!specFields) return specFields
+  const result: Record<string, ResourceFieldDef> = {}
+  for (const [name, def] of Object.entries(specFields)) {
+    if (isResourceRef(def.type) && !def.list?.formatter) {
+      const map = labelMap.value
+      result[name] = {
+        ...def,
+        list: {
+          ...def.list,
+          formatter: (id) => (id != null ? (map[name]?.[String(id)] ?? String(id)) : '—'),
+        },
+      }
+    } else {
+      result[name] = def
+    }
+  }
+  return result
+})
+
 const customProps = computed<ResourceListPageProps>(() => ({
   items: items.value,
   schema: schema.value,
   labels: labels.value,
-  fields: route.meta.spec?.fields,
+  fields: enrichedFields.value,
   resource: route.meta.spec?.name,
   loading: store.loading,
   error: store.error,

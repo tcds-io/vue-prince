@@ -146,4 +146,53 @@ describe('ResourceListView', () => {
       expect(wrapper.find('.my-table').exists()).toBe(true)
     })
   })
+
+  describe('fields.list.formatter', () => {
+    const refSchema = [{ name: 'company_id', type: 'integer' }]
+    const refItems = [
+      { id: 1, company_id: 3, _resource: 'order' },
+      { id: 2, company_id: 7, _resource: 'order' },
+    ] as any[]
+
+    it('shows raw value when no formatter is provided', () => {
+      const wrapper = mountView({ items: refItems, schema: refSchema })
+      const cells = wrapper.findAll('td').map((td) => td.text())
+      expect(cells).toContain('3')
+      expect(cells).toContain('7')
+    })
+
+    it('applies formatter when provided for a field', () => {
+      const map: Record<string, string> = { '3': 'Acme Corp', '7': 'Beta Ltd' }
+      const wrapper = mountView({
+        items: refItems,
+        schema: refSchema,
+        fields: {
+          company_id: {
+            type: 'integer',
+            list: { formatter: (id: unknown) => map[String(id)] ?? String(id) },
+          },
+        },
+      })
+      const cells = wrapper.findAll('td').map((td) => td.text())
+      expect(cells).toContain('Acme Corp')
+      expect(cells).toContain('Beta Ltd')
+    })
+
+    it('falls back to raw value when formatter has no entry', () => {
+      const map: Record<string, string> = { '3': 'Acme Corp' }
+      const wrapper = mountView({
+        items: refItems,
+        schema: refSchema,
+        fields: {
+          company_id: {
+            type: 'integer',
+            list: { formatter: (id: unknown) => map[String(id)] ?? String(id) },
+          },
+        },
+      })
+      const cells = wrapper.findAll('td').map((td) => td.text())
+      expect(cells).toContain('Acme Corp')
+      expect(cells).toContain('7')
+    })
+  })
 })
