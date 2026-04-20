@@ -109,7 +109,8 @@ export function useResourceLabelMap(
           ]
           if (!newIds.length) return
 
-          if (!inFlightIds.has(refSpec.endpoints.api)) inFlightIds.set(refSpec.endpoints.api, new Set())
+          if (!inFlightIds.has(refSpec.endpoints.api))
+            inFlightIds.set(refSpec.endpoints.api, new Set())
           const flightSet = inFlightIds.get(refSpec.endpoints.api)!
           newIds.forEach((id) => flightSet.add(String(id)))
 

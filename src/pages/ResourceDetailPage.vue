@@ -14,7 +14,7 @@
     <template #footer>
       <PrinceButton type="Back" @click="back" />
       <PrinceButton type="Edit" @click="edit" />
-      <PrinceButton type="Delete" @click="remove" />
+      <PrinceButton type="Delete" @click="confirmDelete" />
     </template>
   </ResourceDetailView>
 </template>
@@ -63,9 +63,8 @@ function edit() {
   router.push({ name: `${segment.value}-edit`, params: { id } })
 }
 
-async function remove() {
-  await store.remove(id)
-  router.push({ name: `${segment.value}-list` })
+function confirmDelete() {
+  router.push({ name: `${segment.value}-delete-confirm`, params: { id } })
 }
 
 const customComponent = computed(() => route.meta.spec?.components?.view)
@@ -80,6 +79,6 @@ const customProps = computed<ResourceViewPageProps>(() => ({
   itemTitle: itemTitle.value,
   back,
   edit,
-  remove,
+  confirmDelete,
 }))
 </script>

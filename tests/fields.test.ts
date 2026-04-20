@@ -196,7 +196,11 @@ describe('buildResourceFieldProps', () => {
     global.fetch = vi.fn().mockResolvedValue({
       json: () => Promise.resolve([{ id: 1, name: 'Alice' }]),
     })
-    const refSpec = { name: 'user', endpoints: { api: '/api/users', route: '/users' }, title: (u: any) => u.name }
+    const refSpec = {
+      name: 'user',
+      endpoints: { api: '/api/users', route: '/users' },
+      title: (u: any) => u.name,
+    }
     const { search } = buildResourceFieldProps(refSpec)
     const results = await search({ search: 'ali' })
     const url = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string
@@ -209,7 +213,11 @@ describe('buildResourceFieldProps', () => {
     global.fetch = vi.fn().mockResolvedValue({
       json: () => Promise.resolve({ data: [{ id: 2, name: 'Bob' }] }),
     })
-    const refSpec = { name: 'user', endpoints: { api: '/api/users', route: '/users' }, title: (u: any) => u.name }
+    const refSpec = {
+      name: 'user',
+      endpoints: { api: '/api/users', route: '/users' },
+      title: (u: any) => u.name,
+    }
     const { search } = buildResourceFieldProps(refSpec)
     const results = await search({ search: 'bo' })
     expect(results).toEqual([{ id: 2, label: 'Bob' }])
@@ -227,7 +235,11 @@ describe('buildResourceFieldProps', () => {
     global.fetch = vi.fn().mockResolvedValue({
       json: () => Promise.resolve({ data: { id: 1, name: 'Alice' } }),
     })
-    const refSpec = { name: 'user', endpoints: { api: '/api/users', route: '/users' }, title: (u: any) => u.name }
+    const refSpec = {
+      name: 'user',
+      endpoints: { api: '/api/users', route: '/users' },
+      title: (u: any) => u.name,
+    }
     const { fetchLabel } = buildResourceFieldProps(refSpec)
     const label = await fetchLabel(1)
     expect(label).toBe('Alice')
@@ -241,19 +253,29 @@ describe('buildResourceFieldProps', () => {
     global.fetch = vi.fn().mockResolvedValue({
       json: () => Promise.resolve({ id: 1, name: 'Alice' }),
     })
-    const refSpec = { name: 'user', endpoints: { api: '/api/users', route: '/users' }, title: (u: any) => u.name }
+    const refSpec = {
+      name: 'user',
+      endpoints: { api: '/api/users', route: '/users' },
+      title: (u: any) => u.name,
+    }
     const { fetchLabel } = buildResourceFieldProps(refSpec)
     expect(await fetchLabel(1)).toBe('Alice')
   })
 
   it('fetchLabel falls back to String(id) on error', async () => {
     global.fetch = vi.fn().mockRejectedValue(new Error('Network'))
-    const { fetchLabel } = buildResourceFieldProps({ name: 'user', endpoints: { api: '/api/users', route: '/users' } })
+    const { fetchLabel } = buildResourceFieldProps({
+      name: 'user',
+      endpoints: { api: '/api/users', route: '/users' },
+    })
     expect(await fetchLabel(42)).toBe('42')
   })
 
   it('title defaults to String(item.id) when spec has no title', () => {
-    const { title } = buildResourceFieldProps({ name: 'user', endpoints: { api: '/api/users', route: '/users' } })
+    const { title } = buildResourceFieldProps({
+      name: 'user',
+      endpoints: { api: '/api/users', route: '/users' },
+    })
     expect(title({ id: 99 })).toBe('99')
   })
 })

@@ -66,6 +66,7 @@ export type ResourcePageComponents = {
   view?: Component
   create?: Component
   edit?: Component
+  delete?: Component
   search?: Component
 }
 
