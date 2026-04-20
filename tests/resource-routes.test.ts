@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { createResourceRoutes } from '../src'
+import { configureVuePrince } from '../src'
 import type { ResourcePageStore } from '../src'
 import type { ResourceSpec } from '../src'
 
@@ -10,6 +11,10 @@ const spec: ResourceSpec = {
 const useStore = () => ({}) as ResourcePageStore
 
 describe('createResourceRoutes', () => {
+  beforeEach(() => {
+    configureVuePrince({ baseUrl: '' })
+  })
+
   it('generates exactly 5 routes', () => {
     expect(createResourceRoutes(spec, useStore)).toHaveLength(5)
   })
@@ -18,8 +23,8 @@ describe('createResourceRoutes', () => {
     const routes = createResourceRoutes(spec, useStore)
     const paths = routes.map((r) => r.path)
     expect(paths[0]).toBe('companies')
-    expect(paths[1]).toBe('companies/create')
-    expect(paths[2]).toBe('companies/:id')
+    expect(paths[1]).toBe('companies/:id')
+    expect(paths[2]).toBe('companies/create')
     expect(paths[3]).toBe('companies/:id/edit')
     expect(paths[4]).toBe('companies/:id/delete/confirm')
   })
@@ -27,8 +32,8 @@ describe('createResourceRoutes', () => {
   it('assigns named routes using the segment', () => {
     const routes = createResourceRoutes(spec, useStore)
     expect(routes[0].name).toBe('companies-list')
-    expect(routes[1].name).toBe('companies-create')
-    expect(routes[2].name).toBe('companies-detail')
+    expect(routes[1].name).toBe('companies-detail')
+    expect(routes[2].name).toBe('companies-create')
     expect(routes[3].name).toBe('companies-edit')
     expect(routes[4].name).toBe('companies-delete-confirm')
   })
@@ -50,11 +55,54 @@ describe('createResourceRoutes', () => {
     }
     const routes = createResourceRoutes(nested, useStore)
     expect(routes[0].path).toBe('admin/products')
-    expect(routes[1].path).toBe('admin/products/create')
-    expect(routes[2].path).toBe('admin/products/:id')
+    expect(routes[1].path).toBe('admin/products/:id')
+    expect(routes[2].path).toBe('admin/products/create')
     expect(routes[3].path).toBe('admin/products/:id/edit')
     expect(routes[4].path).toBe('admin/products/:id/delete/confirm')
     expect(routes[0].name).toBe('products-list')
+  })
+
+  describe('permission filtering', () => {
+    const restrictedSpec: ResourceSpec = {
+      name: 'company',
+      endpoints: { api: '/api/companies', route: '/companies' },
+      permissions: { read: 'companies.read', create: 'companies.write', update: 'companies.write', delete: 'companies.delete' },
+    }
+
+    it('omits all routes when user has no permissions', () => {
+      configureVuePrince({ baseUrl: '', userPermissions: () => [] })
+      expect(createResourceRoutes(restrictedSpec, useStore)).toHaveLength(0)
+    })
+
+    it('includes only read routes when user has read permission', () => {
+      configureVuePrince({ baseUrl: '', userPermissions: () => ['companies.read'] })
+      const routes = createResourceRoutes(restrictedSpec, useStore)
+      const names = routes.map((r) => r.name)
+      expect(names).toContain('companies-list')
+      expect(names).toContain('companies-detail')
+      expect(names).not.toContain('companies-create')
+      expect(names).not.toContain('companies-edit')
+      expect(names).not.toContain('companies-delete-confirm')
+    })
+
+    it('includes create route when user has create permission', () => {
+      configureVuePrince({ baseUrl: '', userPermissions: () => ['companies.read', 'companies.write'] })
+      const names = createResourceRoutes(restrictedSpec, useStore).map((r) => r.name)
+      expect(names).toContain('companies-create')
+      expect(names).toContain('companies-edit')
+    })
+
+    it('includes delete route when user has delete permission', () => {
+      configureVuePrince({ baseUrl: '', userPermissions: () => ['companies.read', 'companies.delete'] })
+      const names = createResourceRoutes(restrictedSpec, useStore).map((r) => r.name)
+      expect(names).toContain('companies-delete-confirm')
+      expect(names).not.toContain('companies-create')
+    })
+
+    it('includes all routes when spec has no permissions defined', () => {
+      configureVuePrince({ baseUrl: '', userPermissions: () => [] })
+      expect(createResourceRoutes(spec, useStore)).toHaveLength(5)
+    })
   })
 
   it('uses the correct Vue components per route', async () => {
@@ -65,8 +113,8 @@ describe('createResourceRoutes', () => {
     const { default: EditPage } = await import('../src/pages/ResourceEditPage.vue')
     const { default: DeletePage } = await import('../src/pages/ResourceDeletePage.vue')
     expect(routes[0].component).toBe(ListPage)
-    expect(routes[1].component).toBe(CreatePage)
-    expect(routes[2].component).toBe(DetailPage)
+    expect(routes[1].component).toBe(DetailPage)
+    expect(routes[2].component).toBe(CreatePage)
     expect(routes[3].component).toBe(EditPage)
     expect(routes[4].component).toBe(DeletePage)
   })

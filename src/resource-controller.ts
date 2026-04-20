@@ -8,6 +8,7 @@ import type {
   ResourceSchemaField,
 } from './api'
 import type { InferResourceListModel, InferResourceModel, ResourceSpec } from './resource'
+import { hasPermission } from './resource'
 import { createResourceApi } from './resource-api'
 
 export function createResourceController<const S extends ResourceSpec>(spec: S) {
@@ -42,6 +43,7 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
       loading.value = true
       error.value = null
       try {
+        if (!hasPermission(spec, 'read')) throw new Error('Permission denied: read')
         const res = await api.list(params)
         list.value = res.data
         listMeta.value = res.meta
@@ -56,6 +58,7 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
       loading.value = true
       error.value = null
       try {
+        if (!hasPermission(spec, 'read')) throw new Error('Permission denied: read')
         const res = await api.get(id)
         item.value = res.data
         itemMeta.value = res.meta
@@ -70,6 +73,7 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
       loading.value = true
       error.value = null
       try {
+        if (!hasPermission(spec, 'create')) throw new Error('Permission denied: create')
         const res = await api.create(data)
         item.value = res.data
         return res.data
@@ -84,6 +88,7 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
       loading.value = true
       error.value = null
       try {
+        if (!hasPermission(spec, 'update')) throw new Error('Permission denied: update')
         const res = await api.update(id, data)
         if (res) {
           item.value = res.data
@@ -102,6 +107,7 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
       loading.value = true
       error.value = null
       try {
+        if (!hasPermission(spec, 'delete')) throw new Error('Permission denied: delete')
         await api.remove(id)
         list.value = list.value.filter((r) => !('id' in r) || r.id !== id)
       } catch (e) {

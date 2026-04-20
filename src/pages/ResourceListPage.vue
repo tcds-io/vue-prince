@@ -1,7 +1,7 @@
 <template>
   <component :is="customComponent" v-if="customComponent" v-bind="customProps" />
   <PrinceCard v-else :title="resourceLabel">
-    <template #header>
+    <template v-if="canCreate" #header>
       <PrinceButton type="Create" @click="createNew">Create {{ resourceLabel }}</PrinceButton>
     </template>
 
@@ -71,7 +71,7 @@ import { useRoute, useRouter } from 'vue-router'
 import type { ResourceListItem, ResourceSchemaField } from '../api'
 import type { ResourceListPageProps } from '../page-props'
 import type { ResourceFieldDef } from '../resource'
-import { isResourceRef } from '../resource'
+import { hasPermission, isResourceRef } from '../resource'
 import PrinceButton from '../ui/PrinceButton.vue'
 import PrinceCard from '../ui/PrinceCard.vue'
 import ResourceListView from '../ui/ResourceListView.vue'
@@ -156,6 +156,8 @@ function createNew() {
   router.push({ name: `${segment.value}-create` })
 }
 
+const canCreate = computed(() => !route.meta.spec || hasPermission(route.meta.spec, 'create'))
+
 const customComponent = computed(() => route.meta.spec?.components?.list)
 const searchComponent = computed(() => route.meta.spec?.components?.search)
 
@@ -202,6 +204,7 @@ const customProps = computed<ResourceListPageProps>(() => ({
   goToPage,
   createNew,
   onSearch: scheduleSearch,
+  canCreate: canCreate.value,
 }))
 </script>
 
