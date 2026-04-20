@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest'
-import { defineResource, isResourceRef } from '../src'
+import { describe, expect, it } from 'vitest'
 import type { ResourceSpec } from '../src'
+import { defineResource, isResourceRef } from '../src'
 
 const endpoints = { api: '/api/users', route: '/users' }
 
@@ -78,6 +78,57 @@ describe('defineResource', () => {
       components: { list: MyList as any },
     })
     expect(result.components?.list).toBe(MyList)
+  })
+
+  it('infers title item type from fields', () => {
+    // Would be a compile error if item.name were not string (.toUpperCase is string-only)
+    defineResource({
+      name: 'user',
+      endpoints: { api: '/users', route: '/users' },
+      fields: {
+        name: { type: 'string' as const },
+        age: { type: 'integer' as const },
+      },
+      title: (item) => item.name.toUpperCase(),
+    })
+  })
+
+  it('infers list formatter value type from field type', () => {
+    // Each method only exists on the expected primitive type
+    defineResource({
+      name: 'user',
+      endpoints: { api: '/users', route: '/users' },
+      fields: {
+        name: { type: 'string' as const, list: { formatter: (v) => v.toUpperCase() } },
+        age: { type: 'integer' as const, list: { formatter: (v) => v.toFixed(2) } },
+        active: { type: 'boolean' as const, list: { formatter: (v) => (v ? 'yes' : 'no') } },
+      },
+    })
+  })
+
+  it('infers form formatter value type from field type', () => {
+    defineResource({
+      name: 'user',
+      endpoints: { api: '/users', route: '/users' },
+      fields: {
+        name: { type: 'string' as const, form: { formatter: (v) => v.toUpperCase() } },
+        age: { type: 'integer' as const, form: { formatter: (v) => v.toFixed(2) } },
+      },
+    })
+  })
+
+  it('infers resource-ref formatter value type as number', () => {
+    const otherSpec: ResourceSpec = {
+      name: 'company',
+      endpoints: { api: '/companies', route: '/companies' },
+    }
+    defineResource({
+      name: 'user',
+      endpoints: { api: '/users', route: '/users' },
+      fields: {
+        company_id: { type: () => otherSpec, list: { formatter: (v) => v.toFixed(0) } },
+      },
+    })
   })
 
   it('accepts resource-ref fields', () => {

@@ -107,26 +107,8 @@ export type InferResourceListModel<S extends ResourceSpec> =
     ? { [K in ListVisibleKeys<DefinedFields<S>>]: FieldTypeToTs<DefinedFields<S>[K]['type']> }
     : Record<string, unknown>
 
-// Input type used by defineResource — formatters are contextually typed from `type`.
-type FieldDefInput<T extends SpecFieldType | (() => ResourceSpec)> = Omit<
-  ResourceFieldDef,
-  'type' | 'list' | 'form'
-> & {
-  type: T
-  list?: Omit<ResourceFieldDefList, 'formatter'> & {
-    formatter?: (value: FieldTypeToTs<T>) => string
-  }
-  form?: Omit<ResourceFieldDefForm, 'formatter'> & {
-    formatter?: (value: FieldTypeToTs<T>) => string
-  }
-}
-
-type AnyFieldBase = { type: SpecFieldType | (() => ResourceSpec) }
-
-type FieldsToModel<F extends Record<string, AnyFieldBase> | undefined> =
-  F extends Record<string, AnyFieldBase>
-    ? { [K in keyof F]: FieldTypeToTs<F[K]['type']> }
-    : Record<string, unknown>
+// Alias for the field type discriminant — either a primitive kind or a lazy resource reference.
+type AnyTypeRef = SpecFieldType | (() => ResourceSpec)
 
 export function hasPermission(spec: ResourceSpec, action: keyof ResourcePermissions): boolean {
   const required = spec.permissions?.[action]
@@ -135,25 +117,32 @@ export function hasPermission(spec: ResourceSpec, action: keyof ResourcePermissi
   return perms ? perms.includes(required) : true
 }
 
+// F maps field names to their type discriminants (e.g. { name: 'string', age: 'integer' }).
+// Keeping F flat (not nested inside a field object) lets TypeScript resolve F[K] to the literal
+// during contextual typing, so formatter/title parameter types are inferred precisely.
 export function defineResource<
-  // Default to Record<never, ...> so omitting `fields` is valid (F is inferred as empty).
-  const F extends Record<string, AnyFieldBase> = Record<never, AnyFieldBase>,
-  S extends Omit<ResourceSpec, 'fields' | 'title'> = Omit<ResourceSpec, 'fields' | 'title'>,
+  const F extends Record<string, AnyTypeRef> = Record<never, AnyTypeRef>,
 >(
-  spec: S & {
-    // Direct mapped type (no conditional) so TypeScript can infer F via homomorphic inference.
-    fields?: { [K in keyof F]: FieldDefInput<F[K]['type']> }
-    // Return type is unknown to tolerate circular-ref inference widening FieldsToModel<F>.
-    title?: (item: FieldsToModel<F>) => unknown
+  spec: Omit<ResourceSpec, 'fields' | 'title'> & {
+    fields?: {
+      [K in keyof F]: Omit<ResourceFieldDef, 'type' | 'list' | 'form'> & {
+        type: F[K]
+        list?: Omit<ResourceFieldDefList, 'formatter'> & {
+          formatter?: (value: FieldTypeToTs<F[K]>) => string
+        }
+        form?: Omit<ResourceFieldDefForm, 'formatter'> & {
+          formatter?: (value: FieldTypeToTs<F[K]>) => string
+        }
+      }
+    }
+    title?: (item: { [K in keyof F]: FieldTypeToTs<F[K]> }) => unknown
   },
-): S & {
-  fields?: F
+): ResourceSpec & {
+  fields?: { [K in keyof F]: ResourceFieldDef & { type: F[K] } }
   title?: (item: Record<string, unknown>) => string
-  tabs?: readonly ResourceTab[]
 } {
-  return spec as S & {
-    fields?: F
+  return spec as ResourceSpec & {
+    fields?: { [K in keyof F]: ResourceFieldDef & { type: F[K] } }
     title?: (item: Record<string, unknown>) => string
-    tabs?: readonly ResourceTab[]
   }
 }
