@@ -16,7 +16,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "vue-tsc --declaration --emitDeclarationOnly --outDir dist/types && vite build",
+    "build": "vite build && vue-tsc --project tsconfig.build.json",
     "test": "vitest",
     "test:run": "vitest run",
     "typecheck": "vue-tsc --noEmit",
