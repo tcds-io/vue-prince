@@ -138,12 +138,11 @@ describe('ResourceDetailPage', () => {
       expect(mockPush).toHaveBeenCalledWith({ name: 'companies-edit', params: { id: '3' } })
     })
 
-    it('remove calls store.remove then navigates to list', async () => {
+    it('confirmDelete navigates to delete-confirm route', () => {
       const wrapper = mountCustom({}, '3')
-      const { remove } = wrapper.findComponent(CustomView).vm.$attrs as any
-      await remove()
-      expect(store.remove).toHaveBeenCalledWith('3')
-      expect(mockPush).toHaveBeenCalledWith({ name: 'companies-list' })
+      const { confirmDelete } = wrapper.findComponent(CustomView).vm.$attrs as any
+      confirmDelete()
+      expect(mockPush).toHaveBeenCalledWith({ name: 'companies-delete-confirm', params: { id: '3' } })
     })
 
     it('itemTitle is undefined when spec has no title function', () => {

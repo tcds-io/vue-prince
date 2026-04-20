@@ -28,7 +28,17 @@ export interface ResourceViewPageProps {
   itemTitle: string | undefined
   back: () => void
   edit: () => void
-  remove: () => Promise<void>
+  confirmDelete: () => void
+}
+
+export interface ResourceDeletePageProps {
+  item: Record<string, unknown> | null
+  resource: string | undefined
+  loading: boolean
+  error: string | null
+  itemTitle: string | undefined
+  cancel: () => void
+  confirm: () => Promise<void>
 }
 
 export interface ResourceCreatePageProps {

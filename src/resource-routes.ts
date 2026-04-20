@@ -5,6 +5,7 @@ import ResourceListPage from './pages/ResourceListPage.vue'
 import ResourceDetailPage from './pages/ResourceDetailPage.vue'
 import ResourceCreatePage from './pages/ResourceCreatePage.vue'
 import ResourceEditPage from './pages/ResourceEditPage.vue'
+import ResourceDeletePage from './pages/ResourceDeletePage.vue'
 
 export interface ResourcePageStore {
   list: unknown[]
@@ -59,6 +60,12 @@ export function createResourceRoutes(
       path: `${basePath}/:id/edit`,
       name: `${segment}-edit`,
       component: ResourceEditPage,
+      meta: { useStore, spec },
+    },
+    {
+      path: `${basePath}/:id/delete/confirm`,
+      name: `${segment}-delete-confirm`,
+      component: ResourceDeletePage,
       meta: { useStore, spec },
     },
   ]

@@ -10,8 +10,8 @@ const spec: ResourceSpec = {
 const useStore = () => ({}) as ResourcePageStore
 
 describe('createResourceRoutes', () => {
-  it('generates exactly 4 routes', () => {
-    expect(createResourceRoutes(spec, useStore)).toHaveLength(4)
+  it('generates exactly 5 routes', () => {
+    expect(createResourceRoutes(spec, useStore)).toHaveLength(5)
   })
 
   it('derives the segment from endpoints.route', () => {
@@ -21,6 +21,7 @@ describe('createResourceRoutes', () => {
     expect(paths[1]).toBe('companies/create')
     expect(paths[2]).toBe('companies/:id')
     expect(paths[3]).toBe('companies/:id/edit')
+    expect(paths[4]).toBe('companies/:id/delete/confirm')
   })
 
   it('assigns named routes using the segment', () => {
@@ -29,6 +30,7 @@ describe('createResourceRoutes', () => {
     expect(routes[1].name).toBe('companies-create')
     expect(routes[2].name).toBe('companies-detail')
     expect(routes[3].name).toBe('companies-edit')
+    expect(routes[4].name).toBe('companies-delete-confirm')
   })
 
   it('attaches useStore to every route meta', () => {
@@ -51,6 +53,7 @@ describe('createResourceRoutes', () => {
     expect(routes[1].path).toBe('admin/products/create')
     expect(routes[2].path).toBe('admin/products/:id')
     expect(routes[3].path).toBe('admin/products/:id/edit')
+    expect(routes[4].path).toBe('admin/products/:id/delete/confirm')
     expect(routes[0].name).toBe('products-list')
   })
 
@@ -60,9 +63,11 @@ describe('createResourceRoutes', () => {
     const { default: CreatePage } = await import('../src/pages/ResourceCreatePage.vue')
     const { default: DetailPage } = await import('../src/pages/ResourceDetailPage.vue')
     const { default: EditPage } = await import('../src/pages/ResourceEditPage.vue')
+    const { default: DeletePage } = await import('../src/pages/ResourceDeletePage.vue')
     expect(routes[0].component).toBe(ListPage)
     expect(routes[1].component).toBe(CreatePage)
     expect(routes[2].component).toBe(DetailPage)
     expect(routes[3].component).toBe(EditPage)
+    expect(routes[4].component).toBe(DeletePage)
   })
 })
