@@ -10,6 +10,7 @@
     :loading="store.loading"
     :error="store.error"
     :item-title="itemTitle"
+    :tabs="tabs"
   >
     <template #footer>
       <PrinceButton type="Back" @click="back" />
@@ -20,14 +21,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { ResourceSchemaField } from '../api'
 import type { ResourceViewPageProps } from '../page-props'
 import ResourceDetailView from '../ui/ResourceDetailView.vue'
 import PrinceButton from '../ui/PrinceButton.vue'
 import { hasPermission } from '../resource'
-import { useResourceSchema, useResourceLabels } from './useResourceMeta'
+import { useResourceSchema, useResourceLabels, useResourceTabs } from './useResourceMeta'
 
 const route = useRoute()
 const router = useRouter()
@@ -44,6 +45,10 @@ const schema = useResourceSchema(() =>
 const labels = useResourceLabels()
 
 const item = computed(() => store.item as Record<string, unknown> | null)
+
+const { tabs } = route.meta.spec
+  ? useResourceTabs(route.meta.spec, () => id)
+  : { tabs: ref([]) }
 
 const itemTitle = computed(() => {
   const titleFn = route.meta.spec?.title
@@ -86,5 +91,6 @@ const customProps = computed<ResourceViewPageProps>(() => ({
   confirmDelete,
   canEdit: canEdit.value,
   canDelete: canDelete.value,
+  tabs: tabs.value,
 }))
 </script>

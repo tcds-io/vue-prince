@@ -30,6 +30,8 @@ export {
   ResourceField,
 } from './ui/fields'
 
+export type { ResolvedTab } from './pages/useResourceMeta'
+
 export { default as ResourceListView } from './ui/ResourceListView.vue'
 export { default as ResourceDetailView } from './ui/ResourceDetailView.vue'
 export { default as ResourceFormView } from './ui/ResourceFormView.vue'
