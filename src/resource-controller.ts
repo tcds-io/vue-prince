@@ -16,7 +16,7 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
 
   const api = createResourceApi(spec)
 
-  const useStore = defineStore(`resource:${spec.path}`, () => {
+  const useStore = defineStore(`resource:${spec.endpoints.api}`, () => {
     const list = ref<ResourceListItem<ListModel>[]>([])
     const listMeta = ref<ResourceListMetadata | null>(null)
     const item = ref<Model | null>(null)

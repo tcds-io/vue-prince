@@ -3,7 +3,10 @@ import { createResourceRoutes } from '../src'
 import type { ResourcePageStore } from '../src'
 import type { ResourceSpec } from '../src'
 
-const spec: ResourceSpec = { name: 'company', path: '/api/companies' }
+const spec: ResourceSpec = {
+  name: 'company',
+  endpoints: { api: '/api/companies', route: '/companies' },
+}
 const useStore = () => ({}) as ResourcePageStore
 
 describe('createResourceRoutes', () => {
@@ -11,7 +14,7 @@ describe('createResourceRoutes', () => {
     expect(createResourceRoutes(spec, useStore)).toHaveLength(4)
   })
 
-  it('derives the segment from the last path component', () => {
+  it('derives the segment from endpoints.route', () => {
     const routes = createResourceRoutes(spec, useStore)
     const paths = routes.map((r) => r.path)
     expect(paths[0]).toBe('companies')
@@ -38,10 +41,16 @@ describe('createResourceRoutes', () => {
     routes.forEach((route) => expect(route.meta?.spec).toBe(spec))
   })
 
-  it('works with deeply nested API paths', () => {
-    const nested: ResourceSpec = { name: 'product', path: '/api/v2/backoffice/products' }
+  it('works with nested route paths', () => {
+    const nested: ResourceSpec = {
+      name: 'product',
+      endpoints: { api: '/api/v2/backoffice/products', route: '/admin/products' },
+    }
     const routes = createResourceRoutes(nested, useStore)
-    expect(routes[0].path).toBe('products')
+    expect(routes[0].path).toBe('admin/products')
+    expect(routes[1].path).toBe('admin/products/create')
+    expect(routes[2].path).toBe('admin/products/:id')
+    expect(routes[3].path).toBe('admin/products/:id/edit')
     expect(routes[0].name).toBe('products-list')
   })
 

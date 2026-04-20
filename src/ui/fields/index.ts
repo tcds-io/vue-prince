@@ -84,7 +84,7 @@ export function buildResourceFieldProps(refSpec: ResourceSpec) {
   const search = async (params: Record<string, string>): Promise<ResourceOption[]> => {
     try {
       const qs = new URLSearchParams(params).toString()
-      const items = await fetchJson(`${baseUrl}${refSpec.path}?${qs}`)
+      const items = await fetchJson(`${baseUrl}${refSpec.endpoints.api}?${qs}`)
       return items.map((item) => ({ id: item.id as number, label: titleFn(item) }))
     } catch {
       return []
@@ -93,7 +93,7 @@ export function buildResourceFieldProps(refSpec: ResourceSpec) {
 
   const fetchLabel = async (id: number): Promise<string> => {
     try {
-      const res = await fetch(`${baseUrl}${refSpec.path}/${id}`, {
+      const res = await fetch(`${baseUrl}${refSpec.endpoints.api}/${id}`, {
         headers: { 'Content-Type': 'application/json' },
       })
       const body = (await res.json()) as Record<string, unknown>

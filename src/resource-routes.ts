@@ -33,29 +33,30 @@ export function createResourceRoutes(
   spec: ResourceSpec,
   useStore: () => ResourcePageStore,
 ): RouteRecordRaw[] {
-  const segment = spec.path.split('/').pop()!
+  const basePath = spec.endpoints.route.replace(/^\//, '')
+  const segment = basePath.split('/').pop()!
 
   return [
     {
-      path: segment,
+      path: basePath,
       name: `${segment}-list`,
       component: ResourceListPage,
       meta: { useStore, spec },
     },
     {
-      path: `${segment}/create`,
+      path: `${basePath}/create`,
       name: `${segment}-create`,
       component: ResourceCreatePage,
       meta: { useStore, spec },
     },
     {
-      path: `${segment}/:id`,
+      path: `${basePath}/:id`,
       name: `${segment}-detail`,
       component: ResourceDetailPage,
       meta: { useStore, spec },
     },
     {
-      path: `${segment}/:id/edit`,
+      path: `${basePath}/:id/edit`,
       name: `${segment}-edit`,
       component: ResourceEditPage,
       meta: { useStore, spec },

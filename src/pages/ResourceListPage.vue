@@ -81,7 +81,7 @@ const route = useRoute()
 const router = useRouter()
 const store = route.meta.useStore!()
 
-const segment = computed(() => route.meta.spec?.path.split('/').pop())
+const segment = computed(() => route.meta.spec?.endpoints.route.split('/').pop())
 const resourceLabel = computed(() => {
   const name = route.meta.spec?.name ?? ''
   return name.charAt(0).toUpperCase() + name.slice(1)

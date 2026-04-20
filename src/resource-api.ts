@@ -20,13 +20,13 @@ export function createResourceApi<const S extends ResourceSpec>(
 
   return {
     async schema() {
-      const response = await fetch(`${getConfig().baseUrl}${spec.path}/_schema`, { headers })
+      const response = await fetch(`${getConfig().baseUrl}${spec.endpoints.api}/_schema`, { headers })
       const body = (await response.json()) as { schema: ResourceSchemaField[] }
       return body.schema
     },
 
     async list(params) {
-      const url = new URL(spec.path, getConfig().baseUrl)
+      const url = new URL(spec.endpoints.api, getConfig().baseUrl)
 
       if (params) {
         Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
@@ -38,13 +38,13 @@ export function createResourceApi<const S extends ResourceSpec>(
     },
 
     async get(id) {
-      const response = await fetch(`${getConfig().baseUrl}${spec.path}/${id}`, { headers })
+      const response = await fetch(`${getConfig().baseUrl}${spec.endpoints.api}/${id}`, { headers })
 
       return (await response.json()) as Promise<ResourceResponse<Model>>
     },
 
     async create(data) {
-      const response = await fetch(`${getConfig().baseUrl}${spec.path}`, {
+      const response = await fetch(`${getConfig().baseUrl}${spec.endpoints.api}`, {
         method: 'POST',
         headers,
         body: JSON.stringify(data),
@@ -56,7 +56,7 @@ export function createResourceApi<const S extends ResourceSpec>(
     },
 
     async update(id, data) {
-      const response = await fetch(`${getConfig().baseUrl}${spec.path}/${id}`, {
+      const response = await fetch(`${getConfig().baseUrl}${spec.endpoints.api}/${id}`, {
         method: 'PATCH',
         headers,
         body: JSON.stringify(data),
@@ -67,7 +67,7 @@ export function createResourceApi<const S extends ResourceSpec>(
     },
 
     async remove(id) {
-      await fetch(`${getConfig().baseUrl}${spec.path}/${id}`, { method: 'DELETE', headers })
+      await fetch(`${getConfig().baseUrl}${spec.endpoints.api}/${id}`, { method: 'DELETE', headers })
     },
   }
 }

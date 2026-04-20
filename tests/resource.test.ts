@@ -2,9 +2,11 @@ import { describe, it, expect } from 'vitest'
 import { defineResource, isResourceRef } from '../src'
 import type { ResourceSpec } from '../src'
 
+const endpoints = { api: '/api/users', route: '/users' }
+
 describe('isResourceRef', () => {
   it('identifies a resource spec', () => {
-    const spec: ResourceSpec = { name: 'user', path: '/api/users' }
+    const spec: ResourceSpec = { name: 'user', endpoints }
     expect(isResourceRef(spec)).toBe(true)
   })
 
@@ -13,12 +15,12 @@ describe('isResourceRef', () => {
     expect(isResourceRef('integer')).toBe(false)
   })
 
-  it('rejects objects missing path', () => {
+  it('rejects objects missing endpoints', () => {
     expect(isResourceRef({ name: 'user' })).toBe(false)
   })
 
   it('rejects objects missing name', () => {
-    expect(isResourceRef({ path: '/api/users' })).toBe(false)
+    expect(isResourceRef({ endpoints })).toBe(false)
   })
 
   it('rejects null', () => {
@@ -35,10 +37,12 @@ describe('isResourceRef', () => {
 })
 
 describe('defineResource', () => {
+  const companyEndpoints = { api: '/api/companies', route: '/companies' }
+
   it('returns the spec unchanged', () => {
     const spec = {
       name: 'company',
-      path: '/api/companies',
+      endpoints: companyEndpoints,
       fields: {
         id: { type: 'integer' as const },
         name: { type: 'string' as const },
@@ -48,21 +52,21 @@ describe('defineResource', () => {
   })
 
   it('works without fields', () => {
-    const result = defineResource({ name: 'company', path: '/api/companies' })
+    const result = defineResource({ name: 'company', endpoints: companyEndpoints })
     expect(result.name).toBe('company')
-    expect(result.path).toBe('/api/companies')
+    expect(result.endpoints).toEqual(companyEndpoints)
     expect(result.fields).toBeUndefined()
   })
 
   it('preserves the title function', () => {
     const title = (item: any) => item.name
-    const result = defineResource({ name: 'company', path: '/api/companies', title })
+    const result = defineResource({ name: 'company', endpoints: companyEndpoints, title })
     expect(result.title).toBe(title)
   })
 
   it('preserves permissions', () => {
     const permissions = { create: 'admin', delete: 'superadmin' }
-    const result = defineResource({ name: 'company', path: '/api/companies', permissions })
+    const result = defineResource({ name: 'company', endpoints: companyEndpoints, permissions })
     expect(result.permissions).toEqual(permissions)
   })
 
@@ -70,17 +74,17 @@ describe('defineResource', () => {
     const MyList = {}
     const result = defineResource({
       name: 'company',
-      path: '/api/companies',
+      endpoints: companyEndpoints,
       components: { list: MyList as any },
     })
     expect(result.components?.list).toBe(MyList)
   })
 
   it('accepts resource-ref fields', () => {
-    const userSpec: ResourceSpec = { name: 'user', path: '/api/users' }
+    const userSpec: ResourceSpec = { name: 'user', endpoints }
     const result = defineResource({
       name: 'company',
-      path: '/api/companies',
+      endpoints: companyEndpoints,
       fields: { owner_id: { type: userSpec } },
     })
     expect(result.fields?.owner_id.type).toBe(userSpec)

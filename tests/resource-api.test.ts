@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { configureVuePrince } from '../src'
 import { createResourceApi } from '../src'
 
-const spec = { name: 'company', path: '/api/companies' }
+const spec = { name: 'company', endpoints: { api: '/api/companies', route: '/api/companies' } }
 
 function mockFetch(body: unknown, status = 200) {
   return vi.fn().mockResolvedValue({

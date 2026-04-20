@@ -3,8 +3,17 @@
     <label>{{ label }}</label>
 
     <template v-if="!editable">
-      <RouterLink v-if="value != null" :to="`/${segment}/${value}`">{{ value }}</RouterLink>
-      <span v-else>—</span>
+      <span v-if="value == null" class="field-value">—</span>
+      <span v-else class="field-value">
+        {{ inputText || value }}
+        <a
+          :href="router.resolve(`${props.refSpec.endpoints.route}/${value}`).href"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="open-link"
+          >↗</a
+        >
+      </span>
     </template>
 
     <div v-else>
@@ -29,16 +38,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
-import { RouterLink } from 'vue-router'
+import { onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import type { ResourceFieldProps } from '../../field-props'
 import { useAutocomplete, useFieldEditable } from '../../field-props'
 
 const value = defineModel<number | null>('value')
 const props = defineProps<ResourceFieldProps>()
 
+const router = useRouter()
 const editable = useFieldEditable(props)
-const segment = computed(() => props.refSpec.path.split('/').pop())
 
 const MIN_SEARCH_LENGTH = 2
 
@@ -46,7 +55,7 @@ const { options, inputText, open, search, clear, selectOption, onBlur, initLabel
   useAutocomplete(props)
 
 onMounted(async () => {
-  if (editable.value) await initLabel(value.value)
+  if (value.value != null) await initLabel(value.value)
 })
 </script>
 
@@ -87,13 +96,17 @@ onMounted(async () => {
   background: var(--prince-color-surface, #f8f9fa);
 }
 
-/* RouterLink in display mode */
-.vue-resource.field--resource a {
-  color: var(--prince-color-primary, #2563eb);
+/* Open-in-new-tab link next to the displayed label */
+.vue-resource.field--resource .open-link {
+  margin-left: 4px;
+  font-size: 0.75em;
+  color: var(--prince-color-text-muted, #6c757d);
   text-decoration: none;
+  opacity: 0.6;
 }
 
-.vue-resource.field--resource a:hover {
-  text-decoration: underline;
+.vue-resource.field--resource .open-link:hover {
+  opacity: 1;
+  color: var(--prince-color-primary, #2563eb);
 }
 </style>

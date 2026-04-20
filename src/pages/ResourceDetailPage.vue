@@ -33,7 +33,7 @@ const router = useRouter()
 const store = route.meta.useStore!()
 
 const id = route.params.id as string
-const segment = computed(() => route.meta.spec?.path.split('/').pop())
+const segment = computed(() => route.meta.spec?.endpoints.route.split('/').pop())
 
 const schema = useResourceSchema(() =>
   store.itemMeta?.schema?.length
