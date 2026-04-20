@@ -21,12 +21,13 @@ type SpecFieldTypeToTs = {
 }
 
 // Maps a field's `type` to its TypeScript value type.
-type FieldTypeToTs<T extends SpecFieldType | ResourceSpec | (() => ResourceSpec)> =
-  T extends ResourceSpec | (() => ResourceSpec)
-    ? number
-    : T extends SpecFieldType
-      ? SpecFieldTypeToTs[T]
-      : never
+type FieldTypeToTs<T extends SpecFieldType | ResourceSpec | (() => ResourceSpec)> = T extends
+  | ResourceSpec
+  | (() => ResourceSpec)
+  ? number
+  : T extends SpecFieldType
+    ? SpecFieldTypeToTs[T]
+    : never
 
 // `any` lets (v: string) => string be assignable to this slot (bypasses contravariance).
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -56,9 +57,7 @@ export function isResourceRef(type: unknown): type is ResourceSpec {
   return typeof type === 'object' && type !== null && 'endpoints' in type && 'name' in type
 }
 
-export function resolveFieldType(
-  type: ResourceFieldDef['type'],
-): SpecFieldType | ResourceSpec {
+export function resolveFieldType(type: ResourceFieldDef['type']): SpecFieldType | ResourceSpec {
   return typeof type === 'function' ? type() : type
 }
 

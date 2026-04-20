@@ -188,4 +188,11 @@ describe('ResourceDetailPage', () => {
       expect((wrapper.findComponent(CustomView).vm.$attrs as any).item).toEqual(store.item)
     })
   })
+
+  describe('tabs card', () => {
+    it('does not render tabs card when spec has no tabs', () => {
+      const wrapper = mountPage()
+      expect(wrapper.find('.resource-tabs-card').exists()).toBe(false)
+    })
+  })
 })

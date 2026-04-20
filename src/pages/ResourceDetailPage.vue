@@ -1,23 +1,25 @@
 <template>
   <component :is="customComponent" v-if="customComponent" v-bind="customProps" />
-  <ResourceDetailView
-    v-else
-    :item="item"
-    :schema="schema"
-    :labels="labels"
-    :fields="route.meta.spec?.fields"
-    :resource="route.meta.spec?.name"
-    :loading="store.loading"
-    :error="store.error"
-    :item-title="itemTitle"
-    :tabs="tabs"
-  >
-    <template #footer>
-      <PrinceButton type="Back" @click="back" />
-      <PrinceButton v-if="canEdit" type="Edit" @click="edit" />
-      <PrinceButton v-if="canDelete" type="Delete" @click="confirmDelete" />
-    </template>
-  </ResourceDetailView>
+  <template v-else>
+    <ResourceDetailView
+      :item="item"
+      :schema="schema"
+      :labels="labels"
+      :fields="route.meta.spec?.fields"
+      :resource="route.meta.spec?.name"
+      :loading="store.loading"
+      :error="store.error"
+      :item-title="itemTitle"
+    >
+      <template #footer>
+        <PrinceButton type="Back" @click="back" />
+        <PrinceButton v-if="canEdit" type="Edit" @click="edit" />
+        <PrinceButton v-if="canDelete" type="Delete" @click="confirmDelete" />
+      </template>
+    </ResourceDetailView>
+
+    <ResourceDetailTabs :tabs="tabs" :go-to-page="goToPage" />
+  </template>
 </template>
 
 <script setup lang="ts">
@@ -26,9 +28,11 @@ import { useRoute, useRouter } from 'vue-router'
 import type { ResourceSchemaField } from '../api'
 import type { ResourceViewPageProps } from '../page-props'
 import ResourceDetailView from '../ui/ResourceDetailView.vue'
+import ResourceDetailTabs from './ResourceDetailTabs.vue'
 import PrinceButton from '../ui/PrinceButton.vue'
 import { hasPermission } from '../resource'
-import { useResourceSchema, useResourceLabels, useResourceTabs } from './useResourceMeta'
+import { useResourceSchema, useResourceLabels } from './useResourceMeta'
+import { useResourceTabs } from './useResourceTabs'
 
 const route = useRoute()
 const router = useRouter()
@@ -46,9 +50,9 @@ const labels = useResourceLabels()
 
 const item = computed(() => store.item as Record<string, unknown> | null)
 
-const { tabs } = route.meta.spec
+const { tabs, goToPage } = route.meta.spec
   ? useResourceTabs(route.meta.spec, () => id)
-  : { tabs: ref([]) }
+  : { tabs: ref([]), goToPage: () => {} }
 
 const itemTitle = computed(() => {
   const titleFn = route.meta.spec?.title

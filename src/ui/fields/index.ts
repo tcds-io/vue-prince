@@ -112,7 +112,10 @@ export function resolveFieldComponent(
   type: ResourceFieldDef['type'] | string | null | undefined,
   context: FieldContext = 'display',
 ): Component {
-  const resolved = type != null && typeof type !== 'string' ? resolveFieldType(type as ResourceFieldDef['type']) : type
+  const resolved =
+    type != null && typeof type !== 'string'
+      ? resolveFieldType(type as ResourceFieldDef['type'])
+      : type
   if (isResourceRef(resolved)) {
     const entry = (getConfig().fields ?? {})['resource']
     return (entry && resolveEntry(entry, context)) ?? ResourceField

@@ -1,6 +1,6 @@
 import type { ResourceListItem, ResourceListMetadata, ResourceSchemaField } from './api'
 import type { ResourceFieldDef } from './resource'
-import type { ResolvedTab } from './pages/useResourceMeta'
+import type { ResolvedTab } from './pages/useResourceTabs'
 
 export interface ResourceListPageProps<T = Record<string, unknown>> {
   items: ResourceListItem<T>[]
