@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ref } from 'vue'
 import { flushPromises } from '@vue/test-utils'
-import { useResourceTabs } from '../src/pages/useResourceTabs'
+import { useResourceTabs } from '../src/pages/use-resource-tabs'
 
 vi.mock('../src/resource-api', () => ({ createResourceApi: vi.fn() }))
 
@@ -15,7 +15,7 @@ const userSpec = {
 const companySpec = {
   name: 'company',
   endpoints: { api: '/api/companies', route: '/companies' },
-  tabs: [{ resource: userSpec }],
+  tabs: [{ resource: () => userSpec }],
 }
 
 beforeEach(() => {
@@ -40,7 +40,7 @@ describe('useResourceTabs', () => {
   it('uses custom foreignKey when provided', async () => {
     const mockList = vi.fn().mockResolvedValue({ data: [], meta: {} })
     vi.mocked(createResourceApi).mockReturnValue({ list: mockList } as any)
-    const spec = { ...companySpec, tabs: [{ resource: userSpec, foreignKey: 'org_id' }] }
+    const spec = { ...companySpec, tabs: [{ resource: () => userSpec, foreignKey: 'org_id' }] }
     useResourceTabs(spec, () => 7)
     await flushPromises()
     expect(mockList).toHaveBeenCalledWith({ org_id: '7', page: '1' })
@@ -50,7 +50,7 @@ describe('useResourceTabs', () => {
     vi.mocked(createResourceApi).mockReturnValue({
       list: vi.fn().mockResolvedValue({ data: [], meta: {} }),
     } as any)
-    const spec = { ...companySpec, tabs: [{ resource: userSpec, label: 'Members' }] }
+    const spec = { ...companySpec, tabs: [{ resource: () => userSpec, label: 'Members' }] }
     const { tabs } = useResourceTabs(spec, () => 1)
     expect(tabs.value[0].label).toBe('Members')
   })
@@ -140,7 +140,7 @@ describe('useResourceTabs', () => {
         company_id: { type: 'integer' as const },
       },
     }
-    const spec = { ...companySpec, tabs: [{ resource: specWithFk }] }
+    const spec = { ...companySpec, tabs: [{ resource: () => specWithFk }] }
     const { tabs } = useResourceTabs(spec, () => 1)
     expect(tabs.value[0].schema.map((f) => f.name)).toEqual(['id', 'name'])
   })
@@ -158,7 +158,7 @@ describe('useResourceTabs', () => {
         org_id: { type: 'integer' as const },
       },
     }
-    const spec = { ...companySpec, tabs: [{ resource: specWithFk, foreignKey: 'org_id' }] }
+    const spec = { ...companySpec, tabs: [{ resource: () => specWithFk, foreignKey: 'org_id' }] }
     const { tabs } = useResourceTabs(spec, () => 1)
     expect(tabs.value[0].schema.map((f) => f.name)).toEqual(['id', 'name'])
   })

@@ -31,8 +31,8 @@ import ResourceDetailView from '../ui/ResourceDetailView.vue'
 import ResourceDetailTabs from './ResourceDetailTabs.vue'
 import PrinceButton from '../ui/PrinceButton.vue'
 import { hasPermission } from '../resource'
-import { useResourceSchema, useResourceLabels } from './useResourceMeta'
-import { useResourceTabs } from './useResourceTabs'
+import { useResourceSchema, useResourceLabels } from './use-resource-meta'
+import { useResourceTabs } from './use-resource-tabs'
 
 const route = useRoute()
 const router = useRouter()

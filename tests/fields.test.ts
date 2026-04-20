@@ -146,7 +146,7 @@ describe('resolveFieldComponent', () => {
 
   it('returns ResourceField for a resource-ref type', () => {
     const refSpec = { name: 'user', endpoints: { api: '/api/users', route: '/users' } }
-    expect(resolveFieldComponent(refSpec)).toBe(ResourceField)
+    expect(resolveFieldComponent(() => refSpec)).toBe(ResourceField)
   })
 
   it('uses a custom component registered in config', () => {
@@ -176,7 +176,7 @@ describe('resolveFieldComponent', () => {
     const MyResourceField = {}
     configureVuePrince({ baseUrl: '', fields: { resource: MyResourceField as any } })
     const refSpec = { name: 'user', endpoints: { api: '/api/users', route: '/users' } }
-    expect(resolveFieldComponent(refSpec)).toBe(MyResourceField)
+    expect(resolveFieldComponent(() => refSpec)).toBe(MyResourceField)
   })
 })
 

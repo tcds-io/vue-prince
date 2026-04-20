@@ -62,7 +62,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import type { ResolvedTab } from './useResourceTabs'
+import type { ResolvedTab } from './use-resource-tabs'
 import ResourceListView from '../ui/ResourceListView.vue'
 import PrinceTabs from '../ui/PrinceTabs.vue'
 import PrinceButton from '../ui/PrinceButton.vue'

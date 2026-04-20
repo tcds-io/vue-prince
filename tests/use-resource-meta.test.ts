@@ -6,7 +6,7 @@ import {
   useResourceLabels,
   useResourceLabelMap,
   clearLabelCache,
-} from '../src/pages/useResourceMeta'
+} from '../src/pages/use-resource-meta'
 
 vi.mock('vue-router', () => ({ useRoute: vi.fn() }))
 vi.mock('../src/resource-api', () => ({ createResourceApi: vi.fn() }))
@@ -107,7 +107,7 @@ describe('useResourceLabelMap', () => {
     endpoints: { api: '/companies', route: '/companies' },
     title: (i: any) => i.name,
   }
-  const specFields = { company_id: { type: companySpec } }
+  const specFields = { company_id: { type: () => companySpec } }
 
   function mockApi(data: unknown[]) {
     vi.mocked(createResourceApi).mockReturnValue({
@@ -234,7 +234,7 @@ describe('useResourceLabelMap', () => {
 
   it('uses String(item.id) as title when spec.title is absent', async () => {
     const specWithoutTitle = { name: 'tag', endpoints: { api: '/tags', route: '/tags' } }
-    const fieldsWithoutTitle = { tag_id: { type: specWithoutTitle } }
+    const fieldsWithoutTitle = { tag_id: { type: () => specWithoutTitle } }
     vi.mocked(createResourceApi).mockReturnValue({
       list: vi.fn().mockResolvedValue({ data: [{ id: 42, _resource: 'tag' }], meta: {} }),
     } as any)
