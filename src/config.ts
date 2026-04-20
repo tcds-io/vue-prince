@@ -29,6 +29,7 @@ export type VuePrinceConfig = {
   fields?: FieldComponentMap
   buttons?: ButtonComponentMap
   layout?: LayoutComponentMap
+  userPermissions?: () => string[]
 }
 
 let _config: VuePrinceConfig = {

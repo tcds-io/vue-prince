@@ -16,6 +16,7 @@ export interface ResourceListPageProps<T = Record<string, unknown>> {
   goToPage: (p: number) => void
   createNew: () => void
   onSearch: (params: Record<string, string>) => void
+  canCreate: boolean
 }
 
 export interface ResourceViewPageProps {
@@ -29,6 +30,8 @@ export interface ResourceViewPageProps {
   back: () => void
   edit: () => void
   confirmDelete: () => void
+  canEdit: boolean
+  canDelete: boolean
 }
 
 export interface ResourceDeletePageProps {

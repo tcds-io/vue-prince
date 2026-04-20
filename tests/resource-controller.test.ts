@@ -199,4 +199,67 @@ describe('createResourceController', () => {
       expect(store.loading).toBe(false)
     })
   })
+
+  describe('permission enforcement', () => {
+    const restrictedSpec = {
+      name: 'company',
+      endpoints: { api: '/api/restricted', route: '/restricted' },
+      permissions: { read: 'r', create: 'c', update: 'u', delete: 'd' },
+    }
+
+    beforeEach(() => {
+      configureVuePrince({ baseUrl: 'https://api.example.com', userPermissions: () => [] })
+    })
+
+    it('fetchList sets error when read permission is missing', async () => {
+      const { useStore } = createResourceController(restrictedSpec)
+      const store = useStore()
+      await store.fetchList()
+      expect(store.error).toContain('Permission denied: read')
+    })
+
+    it('fetchItem sets error when read permission is missing', async () => {
+      const { useStore } = createResourceController(restrictedSpec)
+      const store = useStore()
+      await store.fetchItem(1)
+      expect(store.error).toContain('Permission denied: read')
+    })
+
+    it('create sets error when create permission is missing', async () => {
+      const { useStore } = createResourceController(restrictedSpec)
+      const store = useStore()
+      await store.create({ name: 'Acme' })
+      expect(store.error).toContain('Permission denied: create')
+    })
+
+    it('update sets error when update permission is missing', async () => {
+      const { useStore } = createResourceController(restrictedSpec)
+      const store = useStore()
+      await store.update(1, { name: 'Acme' })
+      expect(store.error).toContain('Permission denied: update')
+    })
+
+    it('remove sets error when delete permission is missing', async () => {
+      const { useStore } = createResourceController(restrictedSpec)
+      const store = useStore()
+      await store.remove(1)
+      expect(store.error).toContain('Permission denied: delete')
+    })
+
+    it('resets loading to false after permission denial', async () => {
+      const { useStore } = createResourceController(restrictedSpec)
+      const store = useStore()
+      await store.fetchList()
+      expect(store.loading).toBe(false)
+    })
+
+    it('allows calls when user has the required permission', async () => {
+      configureVuePrince({ baseUrl: 'https://api.example.com', userPermissions: () => ['r'] })
+      global.fetch = mockFetch({ data: [], meta: {} })
+      const { useStore } = createResourceController(restrictedSpec)
+      const store = useStore()
+      await store.fetchList()
+      expect(store.error).toBeNull()
+    })
+  })
 })

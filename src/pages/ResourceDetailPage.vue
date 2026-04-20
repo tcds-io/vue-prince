@@ -13,8 +13,8 @@
   >
     <template #footer>
       <PrinceButton type="Back" @click="back" />
-      <PrinceButton type="Edit" @click="edit" />
-      <PrinceButton type="Delete" @click="confirmDelete" />
+      <PrinceButton v-if="canEdit" type="Edit" @click="edit" />
+      <PrinceButton v-if="canDelete" type="Delete" @click="confirmDelete" />
     </template>
   </ResourceDetailView>
 </template>
@@ -26,6 +26,7 @@ import type { ResourceSchemaField } from '../api'
 import type { ResourceViewPageProps } from '../page-props'
 import ResourceDetailView from '../ui/ResourceDetailView.vue'
 import PrinceButton from '../ui/PrinceButton.vue'
+import { hasPermission } from '../resource'
 import { useResourceSchema, useResourceLabels } from './useResourceMeta'
 
 const route = useRoute()
@@ -67,6 +68,9 @@ function confirmDelete() {
   router.push({ name: `${segment.value}-delete-confirm`, params: { id } })
 }
 
+const canEdit = computed(() => !route.meta.spec || hasPermission(route.meta.spec, 'update'))
+const canDelete = computed(() => !route.meta.spec || hasPermission(route.meta.spec, 'delete'))
+
 const customComponent = computed(() => route.meta.spec?.components?.view)
 
 const customProps = computed<ResourceViewPageProps>(() => ({
@@ -80,5 +84,7 @@ const customProps = computed<ResourceViewPageProps>(() => ({
   back,
   edit,
   confirmDelete,
+  canEdit: canEdit.value,
+  canDelete: canDelete.value,
 }))
 </script>

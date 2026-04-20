@@ -1,4 +1,5 @@
 import type { Component } from 'vue'
+import { getConfig } from './config'
 
 export type SpecFieldType =
   | 'integer'
@@ -115,6 +116,12 @@ type FieldsToModel<F extends Record<string, AnyFieldBase> | undefined> =
   F extends Record<string, AnyFieldBase>
     ? { [K in keyof F]: FieldTypeToTs<F[K]['type']> }
     : Record<string, unknown>
+
+export function hasPermission(spec: ResourceSpec, action: keyof ResourcePermissions): boolean {
+  const required = spec.permissions?.[action]
+  if (!required) return true
+  return (getConfig().userPermissions?.() ?? []).includes(required)
+}
 
 export function defineResource<
   // Default to Record<never, ...> so omitting `fields` is valid (F is inferred as empty).
