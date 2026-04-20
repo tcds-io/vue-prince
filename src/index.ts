@@ -7,6 +7,7 @@ export type {
   LayoutCardProps,
   LayoutTableProps,
   LayoutTabsProps,
+  VuePrinceConfig,
 } from './config'
 export * from './api'
 export * from './resource'
