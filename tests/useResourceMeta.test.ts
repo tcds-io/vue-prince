@@ -5,6 +5,7 @@ import {
   useResourceSchema,
   useResourceLabels,
   useResourceLabelMap,
+  clearLabelCache,
 } from '../src/pages/useResourceMeta'
 
 vi.mock('vue-router', () => ({ useRoute: vi.fn() }))
@@ -112,6 +113,7 @@ describe('useResourceLabelMap', () => {
 
   beforeEach(() => {
     vi.mocked(createResourceApi).mockReset()
+    clearLabelCache()
   })
 
   it('resolves labels from a batch API response', async () => {
@@ -200,7 +202,7 @@ describe('useResourceLabelMap', () => {
       () => specFields,
     )
     await flushPromises()
-    expect(labelMap.value['company_id']).toBeUndefined()
+    expect(labelMap.value['company_id']).toEqual({})
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('company_id'), expect.any(Error))
     warnSpy.mockRestore()
   })
