@@ -93,7 +93,11 @@ const headerTitle = computed(() =>
 function displayFormValue(name: string): unknown {
   const raw = formData[name]
   const fieldDef = props.fields?.[name]
-  if (fieldDef?.form?.readOnly && fieldDef.form.formatter && !isResourceRef(resolveFieldType(fieldDef.type)))
+  if (
+    fieldDef?.form?.readOnly &&
+    fieldDef.form.formatter &&
+    !isResourceRef(resolveFieldType(fieldDef.type))
+  )
     return fieldDef.form.formatter(raw)
   return raw
 }

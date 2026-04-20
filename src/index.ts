@@ -6,6 +6,7 @@ export type {
   LayoutComponentMap,
   LayoutCardProps,
   LayoutTableProps,
+  LayoutTabsProps,
 } from './config'
 export * from './api'
 export * from './resource'
@@ -30,10 +31,11 @@ export {
   ResourceField,
 } from './ui/fields'
 
-export type { ResolvedTab } from './pages/useResourceMeta'
+export type { ResolvedTab } from './pages/useResourceTabs'
 
 export { default as ResourceListView } from './ui/ResourceListView.vue'
 export { default as ResourceDetailView } from './ui/ResourceDetailView.vue'
 export { default as ResourceFormView } from './ui/ResourceFormView.vue'
 export { default as PrinceButton } from './ui/PrinceButton.vue'
 export { default as PrinceCard } from './ui/PrinceCard.vue'
+export { default as PrinceTabs } from './ui/PrinceTabs.vue'

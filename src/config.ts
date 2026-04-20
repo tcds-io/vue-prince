@@ -19,9 +19,14 @@ export interface LayoutTableProps {
   onRowClick?: (item: ResourceListItem<Record<string, unknown>>) => void
 }
 
+export interface LayoutTabsProps {
+  labels: string[]
+}
+
 export type LayoutComponentMap = {
   card?: Component
   table?: Component
+  tabs?: Component
 }
 
 export type VuePrinceConfig = {

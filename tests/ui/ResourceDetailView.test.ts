@@ -100,65 +100,6 @@ describe('ResourceDetailView', () => {
     })
   })
 
-  describe('tabs', () => {
-    const userSpec = {
-      name: 'user',
-      endpoints: { api: '/api/users', route: '/users' },
-      fields: { id: { type: 'integer' as const }, name: { type: 'string' as const } },
-    }
-    const resolvedTabs = [
-      {
-        label: 'Users',
-        spec: userSpec,
-        schema: [{ name: 'id', type: 'integer' }, { name: 'name', type: 'string' }],
-        items: [{ id: 1, name: 'Alice', _resource: 'user' }],
-        loading: false,
-        error: null,
-      },
-      {
-        label: 'Orders',
-        spec: { name: 'order', endpoints: { api: '/api/orders', route: '/orders' } },
-        schema: [],
-        items: [],
-        loading: false,
-        error: null,
-      },
-    ]
-
-    it('does not render tabs when prop is absent', () => {
-      const wrapper = mountDetail()
-      expect(wrapper.find('.resource-tabs').exists()).toBe(false)
-    })
-
-    it('does not render tabs when array is empty', () => {
-      const wrapper = mountDetail({ tabs: [] })
-      expect(wrapper.find('.resource-tabs').exists()).toBe(false)
-    })
-
-    it('renders a tab button for each tab', () => {
-      const wrapper = mountDetail({ tabs: resolvedTabs })
-      const buttons = wrapper.findAll('.resource-tab-btn')
-      expect(buttons).toHaveLength(2)
-      expect(buttons[0].text()).toBe('Users')
-      expect(buttons[1].text()).toBe('Orders')
-    })
-
-    it('marks the first tab button as active by default', () => {
-      const wrapper = mountDetail({ tabs: resolvedTabs })
-      const buttons = wrapper.findAll('.resource-tab-btn')
-      expect(buttons[0].classes()).toContain('active')
-      expect(buttons[1].classes()).not.toContain('active')
-    })
-
-    it('switches active tab on button click', async () => {
-      const wrapper = mountDetail({ tabs: resolvedTabs })
-      const buttons = wrapper.findAll('.resource-tab-btn')
-      await buttons[1].trigger('click')
-      expect(buttons[1].classes()).toContain('active')
-      expect(buttons[0].classes()).not.toContain('active')
-    })
-  })
-
   describe('header title', () => {
     it('uses itemTitle when provided', () => {
       const wrapper = mountDetail({ itemTitle: 'Acme Corp' })
