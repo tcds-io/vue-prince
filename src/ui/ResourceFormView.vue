@@ -38,7 +38,7 @@
 import { computed, reactive, watch } from 'vue'
 import type { ResourceSchemaField } from '../api'
 import type { ResourceFieldDef } from '../resource'
-import { isResourceRef } from '../resource'
+import { isResourceRef, resolveFieldType } from '../resource'
 import type { FieldPage } from '../field-props'
 import {
   resolveFieldComponent,
@@ -53,12 +53,14 @@ function resolveDisplayType(
   specType: ResourceFieldDef['type'] | undefined,
   apiType: string,
 ): string {
-  if (isResourceRef(specType)) return 'integer'
-  return normalizeFieldType((specType as string | undefined) ?? apiType)
+  const resolved = specType != null ? resolveFieldType(specType) : specType
+  if (isResourceRef(resolved)) return 'integer'
+  return normalizeFieldType((resolved as string | undefined) ?? apiType)
 }
 
 function getResourceFieldProps(specType: ResourceFieldDef['type'] | undefined) {
-  const refSpec = isResourceRef(specType) ? specType : undefined
+  const resolved = specType != null ? resolveFieldType(specType) : specType
+  const refSpec = isResourceRef(resolved) ? resolved : undefined
   return refSpec ? buildResourceFieldProps(refSpec) : {}
 }
 
@@ -91,7 +93,7 @@ const headerTitle = computed(() =>
 function displayFormValue(name: string): unknown {
   const raw = formData[name]
   const fieldDef = props.fields?.[name]
-  if (fieldDef?.form?.readOnly && fieldDef.form.formatter && !isResourceRef(fieldDef.type))
+  if (fieldDef?.form?.readOnly && fieldDef.form.formatter && !isResourceRef(resolveFieldType(fieldDef.type)))
     return fieldDef.form.formatter(raw)
   return raw
 }

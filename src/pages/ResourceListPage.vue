@@ -71,7 +71,7 @@ import { useRoute, useRouter } from 'vue-router'
 import type { ResourceListItem, ResourceSchemaField } from '../api'
 import type { ResourceListPageProps } from '../page-props'
 import type { ResourceFieldDef } from '../resource'
-import { hasPermission, isResourceRef } from '../resource'
+import { hasPermission, isResourceRef, resolveFieldType } from '../resource'
 import PrinceButton from '../ui/PrinceButton.vue'
 import PrinceCard from '../ui/PrinceCard.vue'
 import ResourceListView from '../ui/ResourceListView.vue'
@@ -181,7 +181,7 @@ const enrichedFields = computed(() => {
   if (!specFields) return specFields
   const result: Record<string, ResourceFieldDef> = {}
   for (const [name, def] of Object.entries(specFields)) {
-    if (isResourceRef(def.type) && !def.list?.formatter) {
+    if (isResourceRef(resolveFieldType(def.type)) && !def.list?.formatter) {
       const map = labelMap.value
       result[name] = {
         ...def,

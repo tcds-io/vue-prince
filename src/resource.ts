@@ -21,11 +21,12 @@ type SpecFieldTypeToTs = {
 }
 
 // Maps a field's `type` to its TypeScript value type.
-type FieldTypeToTs<T extends SpecFieldType | ResourceSpec> = T extends ResourceSpec
-  ? number
-  : T extends SpecFieldType
-    ? SpecFieldTypeToTs[T]
-    : never
+type FieldTypeToTs<T extends SpecFieldType | ResourceSpec | (() => ResourceSpec)> =
+  T extends ResourceSpec | (() => ResourceSpec)
+    ? number
+    : T extends SpecFieldType
+      ? SpecFieldTypeToTs[T]
+      : never
 
 // `any` lets (v: string) => string be assignable to this slot (bypasses contravariance).
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -44,7 +45,7 @@ export type ResourceFieldDefForm = {
 }
 
 export type ResourceFieldDef = {
-  type: SpecFieldType | ResourceSpec
+  type: SpecFieldType | ResourceSpec | (() => ResourceSpec)
   values?: Array<string | number>
   label?: string
   list?: ResourceFieldDefList
@@ -55,11 +56,23 @@ export function isResourceRef(type: unknown): type is ResourceSpec {
   return typeof type === 'object' && type !== null && 'endpoints' in type && 'name' in type
 }
 
+export function resolveFieldType(
+  type: ResourceFieldDef['type'],
+): SpecFieldType | ResourceSpec {
+  return typeof type === 'function' ? type() : type
+}
+
 export type ResourcePermissions = {
   create?: string
   read?: string
   update?: string
   delete?: string
+}
+
+export type ResourceTab = {
+  resource: ResourceSpec | (() => ResourceSpec)
+  foreignKey?: string
+  label?: string
 }
 
 export type ResourcePageComponents = {
@@ -78,6 +91,7 @@ export type ResourceSpec<T = Record<string, unknown>> = {
   permissions?: ResourcePermissions
   title?: (item: T) => string
   components?: ResourcePageComponents
+  tabs?: ResourceTab[]
 }
 
 type DefinedFields<S extends ResourceSpec> = Exclude<S['fields'], undefined>
@@ -97,7 +111,7 @@ export type InferResourceListModel<S extends ResourceSpec> =
     : Record<string, unknown>
 
 // Input type used by defineResource — formatters are contextually typed from `type`.
-type FieldDefInput<T extends SpecFieldType | ResourceSpec> = Omit<
+type FieldDefInput<T extends SpecFieldType | ResourceSpec | (() => ResourceSpec)> = Omit<
   ResourceFieldDef,
   'type' | 'list' | 'form'
 > & {
@@ -110,7 +124,7 @@ type FieldDefInput<T extends SpecFieldType | ResourceSpec> = Omit<
   }
 }
 
-type AnyFieldBase = { type: SpecFieldType | ResourceSpec }
+type AnyFieldBase = { type: SpecFieldType | ResourceSpec | (() => ResourceSpec) }
 
 type FieldsToModel<F extends Record<string, AnyFieldBase> | undefined> =
   F extends Record<string, AnyFieldBase>

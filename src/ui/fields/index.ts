@@ -1,6 +1,7 @@
 import type { Component } from 'vue'
 import type { ResourceSpec, SpecFieldType } from '../../resource'
-import { isResourceRef } from '../../resource'
+import { isResourceRef, resolveFieldType } from '../../resource'
+import type { ResourceFieldDef } from '../../resource'
 import type { FieldComponentEntry } from '../../config'
 import { getConfig } from '../../config'
 import type { ResourceOption } from '../../field-props'
@@ -108,14 +109,15 @@ export function buildResourceFieldProps(refSpec: ResourceSpec) {
 }
 
 export function resolveFieldComponent(
-  type: string | ResourceSpec | null | undefined,
+  type: ResourceFieldDef['type'] | string | null | undefined,
   context: FieldContext = 'display',
 ): Component {
-  if (isResourceRef(type)) {
+  const resolved = type != null && typeof type !== 'string' ? resolveFieldType(type as ResourceFieldDef['type']) : type
+  if (isResourceRef(resolved)) {
     const entry = (getConfig().fields ?? {})['resource']
     return (entry && resolveEntry(entry, context)) ?? ResourceField
   }
-  const normalized = normalizeFieldType(type as string | null | undefined)
+  const normalized = normalizeFieldType(resolved as string | null | undefined)
   const entry = (getConfig().fields ?? {})[normalized]
   if (entry) return resolveEntry(entry, context) ?? defaultFieldComponents[normalized]
   return defaultFieldComponents[normalized]
