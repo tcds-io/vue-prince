@@ -110,19 +110,19 @@ describe('ResourceFormView', () => {
   })
 
   describe('header title', () => {
-    it('shows capitalised resource name in CREATE mode', () => {
+    it('shows "Create {resource}" in CREATE mode', () => {
       const wrapper = mountForm()
-      expect(wrapper.findComponent({ name: 'PrinceCard' }).props('title')).toBe('Company')
+      expect(wrapper.findComponent({ name: 'PrinceCard' }).props('title')).toBe('Create Company')
     })
 
-    it('shows itemTitle in EDIT mode when provided', () => {
+    it('shows "Edit {resource}" in EDIT mode', () => {
       const wrapper = mountForm({ page: 'EDIT', item: { id: 1 }, itemTitle: 'Acme Corp' })
-      expect(wrapper.findComponent({ name: 'PrinceCard' }).props('title')).toBe('Acme Corp')
+      expect(wrapper.findComponent({ name: 'PrinceCard' }).props('title')).toBe('Edit Company')
     })
 
-    it('falls back to "Resource id" in EDIT mode without itemTitle', () => {
+    it('shows "Edit {resource}" in EDIT mode without itemTitle', () => {
       const wrapper = mountForm({ page: 'EDIT', item: { id: 5 } })
-      expect(wrapper.findComponent({ name: 'PrinceCard' }).props('title')).toContain('5')
+      expect(wrapper.findComponent({ name: 'PrinceCard' }).props('title')).toBe('Edit Company')
     })
   })
 })

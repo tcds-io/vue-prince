@@ -1,8 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { createResourceRoutes } from '../src'
-import { configureVuePrince } from '../src'
-import type { ResourcePageStore } from '../src'
-import type { ResourceSpec } from '../src'
+import { createResourceRoutes, configureVuePrince } from '../src'
+import type { ResourcePageStore, ResourceSpec } from '../src'
 
 const spec: ResourceSpec = {
   name: 'company',
@@ -19,7 +17,7 @@ describe('createResourceRoutes', () => {
     expect(createResourceRoutes(spec, useStore)).toHaveLength(5)
   })
 
-  it('derives the segment from endpoints.route', () => {
+  it('derives paths from endpoints.route', () => {
     const routes = createResourceRoutes(spec, useStore)
     const paths = routes.map((r) => r.path)
     expect(paths[0]).toBe('companies')
@@ -48,6 +46,11 @@ describe('createResourceRoutes', () => {
     routes.forEach((route) => expect(route.meta?.spec).toBe(spec))
   })
 
+  it('does not attach beforeEnter guards (permission is handled by wrapper component)', () => {
+    const routes = createResourceRoutes(spec, useStore)
+    routes.forEach((route) => expect(route.beforeEnter).toBeUndefined())
+  })
+
   it('works with nested route paths', () => {
     const nested: ResourceSpec = {
       name: 'product',
@@ -62,60 +65,13 @@ describe('createResourceRoutes', () => {
     expect(routes[0].name).toBe('products-list')
   })
 
-  describe('permission filtering', () => {
-    const restrictedSpec: ResourceSpec = {
+  it('always registers all 5 routes regardless of userPermissions', () => {
+    const restricted: ResourceSpec = {
       name: 'company',
       endpoints: { api: '/api/companies', route: '/companies' },
-      permissions: { read: 'companies.read', create: 'companies.write', update: 'companies.write', delete: 'companies.delete' },
+      permissions: { read: 'r', create: 'c', update: 'u', delete: 'd' },
     }
-
-    it('omits all routes when user has no permissions', () => {
-      configureVuePrince({ baseUrl: '', userPermissions: () => [] })
-      expect(createResourceRoutes(restrictedSpec, useStore)).toHaveLength(0)
-    })
-
-    it('includes only read routes when user has read permission', () => {
-      configureVuePrince({ baseUrl: '', userPermissions: () => ['companies.read'] })
-      const routes = createResourceRoutes(restrictedSpec, useStore)
-      const names = routes.map((r) => r.name)
-      expect(names).toContain('companies-list')
-      expect(names).toContain('companies-detail')
-      expect(names).not.toContain('companies-create')
-      expect(names).not.toContain('companies-edit')
-      expect(names).not.toContain('companies-delete-confirm')
-    })
-
-    it('includes create route when user has create permission', () => {
-      configureVuePrince({ baseUrl: '', userPermissions: () => ['companies.read', 'companies.write'] })
-      const names = createResourceRoutes(restrictedSpec, useStore).map((r) => r.name)
-      expect(names).toContain('companies-create')
-      expect(names).toContain('companies-edit')
-    })
-
-    it('includes delete route when user has delete permission', () => {
-      configureVuePrince({ baseUrl: '', userPermissions: () => ['companies.read', 'companies.delete'] })
-      const names = createResourceRoutes(restrictedSpec, useStore).map((r) => r.name)
-      expect(names).toContain('companies-delete-confirm')
-      expect(names).not.toContain('companies-create')
-    })
-
-    it('includes all routes when spec has no permissions defined', () => {
-      configureVuePrince({ baseUrl: '', userPermissions: () => [] })
-      expect(createResourceRoutes(spec, useStore)).toHaveLength(5)
-    })
-  })
-
-  it('uses the correct Vue components per route', async () => {
-    const routes = createResourceRoutes(spec, useStore)
-    const { default: ListPage } = await import('../src/pages/ResourceListPage.vue')
-    const { default: CreatePage } = await import('../src/pages/ResourceCreatePage.vue')
-    const { default: DetailPage } = await import('../src/pages/ResourceDetailPage.vue')
-    const { default: EditPage } = await import('../src/pages/ResourceEditPage.vue')
-    const { default: DeletePage } = await import('../src/pages/ResourceDeletePage.vue')
-    expect(routes[0].component).toBe(ListPage)
-    expect(routes[1].component).toBe(DetailPage)
-    expect(routes[2].component).toBe(CreatePage)
-    expect(routes[3].component).toBe(EditPage)
-    expect(routes[4].component).toBe(DeletePage)
+    configureVuePrince({ baseUrl: '', userPermissions: () => [] })
+    expect(createResourceRoutes(restricted, useStore)).toHaveLength(5)
   })
 })

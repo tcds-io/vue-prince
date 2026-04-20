@@ -1,6 +1,6 @@
 <template>
   <component :is="customComponent" v-if="customComponent" v-bind="customProps" />
-  <PrinceCard v-else :title="resourceLabel">
+  <PrinceCard v-else :title="resourceLabelPlural">
     <template v-if="canCreate" #header>
       <PrinceButton type="Create" @click="createNew">Create {{ resourceLabel }}</PrinceButton>
     </template>
@@ -82,10 +82,18 @@ const router = useRouter()
 const store = route.meta.useStore!()
 
 const segment = computed(() => route.meta.spec?.endpoints.route.split('/').pop())
+function pluralize(word: string): string {
+  if (/[^aeiou]y$/i.test(word)) return word.slice(0, -1) + 'ies'
+  if (/(s|sh|ch|x|z)$/i.test(word)) return word + 'es'
+  return word + 's'
+}
+
 const resourceLabel = computed(() => {
   const name = route.meta.spec?.name ?? ''
   return name.charAt(0).toUpperCase() + name.slice(1)
 })
+
+const resourceLabelPlural = computed(() => pluralize(resourceLabel.value))
 
 const specFields = route.meta.spec?.fields
 const hasSpecFields = specFields && Object.keys(specFields).length > 0
