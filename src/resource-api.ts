@@ -20,7 +20,9 @@ export function createResourceApi<const S extends ResourceSpec>(
 
   return {
     async schema() {
-      const response = await fetch(`${getConfig().baseUrl}${spec.endpoints.api}/_schema`, { headers })
+      const response = await fetch(`${getConfig().baseUrl}${spec.endpoints.api}/_schema`, {
+        headers,
+      })
       const body = (await response.json()) as { schema: ResourceSchemaField[] }
       return body.schema
     },
@@ -67,7 +69,10 @@ export function createResourceApi<const S extends ResourceSpec>(
     },
 
     async remove(id) {
-      await fetch(`${getConfig().baseUrl}${spec.endpoints.api}/${id}`, { method: 'DELETE', headers })
+      await fetch(`${getConfig().baseUrl}${spec.endpoints.api}/${id}`, {
+        method: 'DELETE',
+        headers,
+      })
     },
   }
 }

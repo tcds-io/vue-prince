@@ -142,7 +142,10 @@ describe('ResourceDetailPage', () => {
       const wrapper = mountCustom({}, '3')
       const { confirmDelete } = wrapper.findComponent(CustomView).vm.$attrs as any
       confirmDelete()
-      expect(mockPush).toHaveBeenCalledWith({ name: 'companies-delete-confirm', params: { id: '3' } })
+      expect(mockPush).toHaveBeenCalledWith({
+        name: 'companies-delete-confirm',
+        params: { id: '3' },
+      })
     })
 
     it('itemTitle is undefined when spec has no title function', () => {

@@ -4,7 +4,8 @@
     <div v-if="store.loading" class="loading">Loading…</div>
     <div v-else-if="store.error" class="error">{{ store.error }}</div>
     <p v-else class="vue-resource delete-message">
-      You are deleting <strong>{{ displayTitle }}</strong>. Are you sure you want to continue?
+      You are deleting <strong>{{ displayTitle }}</strong
+      >. Are you sure you want to continue?
     </p>
     <template #footer>
       <PrinceButton type="Cancel" @click="cancel" />

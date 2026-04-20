@@ -105,7 +105,11 @@ describe('ResourceDeletePage', () => {
     })
 
     it('itemTitle is undefined when spec has no title function', () => {
-      const wrapper = mountCustom({ ...BASE_SPEC, components: { delete: CustomDelete }, title: undefined })
+      const wrapper = mountCustom({
+        ...BASE_SPEC,
+        components: { delete: CustomDelete },
+        title: undefined,
+      })
       expect((wrapper.findComponent(CustomDelete).vm.$attrs as any).itemTitle).toBeUndefined()
     })
 
