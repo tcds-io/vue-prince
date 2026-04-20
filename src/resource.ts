@@ -19,14 +19,27 @@ type SpecFieldTypeToTs = {
   enum: string
 }
 
+// Maps a field's `type` to its TypeScript value type.
+type FieldTypeToTs<T extends SpecFieldType | ResourceSpec> = T extends ResourceSpec
+  ? number
+  : T extends SpecFieldType
+    ? SpecFieldTypeToTs[T]
+    : never
+
+// `any` lets (v: string) => string be assignable to this slot (bypasses contravariance).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyValue = any
+
 export type ResourceFieldDefList = {
   show?: boolean
   align?: 'left' | 'center' | 'right'
   width?: number
-  formatter?: (value: unknown) => string
+  formatter?: (value: AnyValue) => string
 }
+
 export type ResourceFieldDefForm = {
   readOnly?: boolean
+  formatter?: (value: AnyValue) => string
 }
 
 export type ResourceFieldDef = {
@@ -65,12 +78,6 @@ export type ResourceSpec<T = Record<string, unknown>> = {
   components?: ResourcePageComponents
 }
 
-type FieldTypeToTs<T extends SpecFieldType | ResourceSpec> = T extends ResourceSpec
-  ? number
-  : T extends SpecFieldType
-    ? SpecFieldTypeToTs[T]
-    : number
-
 type DefinedFields<S extends ResourceSpec> = Exclude<S['fields'], undefined>
 
 type ListVisibleKeys<F extends Record<string, ResourceFieldDef>> = {
@@ -87,16 +94,37 @@ export type InferResourceListModel<S extends ResourceSpec> =
     ? { [K in ListVisibleKeys<DefinedFields<S>>]: FieldTypeToTs<DefinedFields<S>[K]['type']> }
     : Record<string, unknown>
 
-type FieldsToModel<F extends Record<string, ResourceFieldDef> | undefined> =
-  F extends Record<string, ResourceFieldDef>
+// Input type used by defineResource — formatters are contextually typed from `type`.
+type FieldDefInput<T extends SpecFieldType | ResourceSpec> = Omit<
+  ResourceFieldDef,
+  'type' | 'list' | 'form'
+> & {
+  type: T
+  list?: Omit<ResourceFieldDefList, 'formatter'> & {
+    formatter?: (value: FieldTypeToTs<T>) => string
+  }
+  form?: Omit<ResourceFieldDefForm, 'formatter'> & {
+    formatter?: (value: FieldTypeToTs<T>) => string
+  }
+}
+
+type AnyFieldBase = { type: SpecFieldType | ResourceSpec }
+
+type FieldsToModel<F extends Record<string, AnyFieldBase> | undefined> =
+  F extends Record<string, AnyFieldBase>
     ? { [K in keyof F]: FieldTypeToTs<F[K]['type']> }
     : Record<string, unknown>
 
 export function defineResource<
-  const F extends Record<string, ResourceFieldDef> | undefined = undefined,
+  // Default to Record<never, ...> so omitting `fields` is valid (F is inferred as empty).
+  const F extends Record<string, AnyFieldBase> = Record<never, AnyFieldBase>,
   const S extends Omit<ResourceSpec, 'fields' | 'title'> = Omit<ResourceSpec, 'fields' | 'title'>,
 >(
-  spec: S & { fields?: F; title?: (item: FieldsToModel<F>) => string },
+  spec: S & {
+    // Direct mapped type (no conditional) so TypeScript can infer F via homomorphic inference.
+    fields?: { [K in keyof F]: FieldDefInput<F[K]['type']> }
+    title?: (item: FieldsToModel<F>) => string
+  },
 ): S & { fields?: F; title?: (item: Record<string, unknown>) => string } {
   return spec as S & { fields?: F; title?: (item: Record<string, unknown>) => string }
 }
