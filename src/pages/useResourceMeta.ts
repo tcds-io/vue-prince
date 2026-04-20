@@ -5,6 +5,18 @@ import type { ResourceFieldDef, ResourceSpec } from '../resource'
 import { isResourceRef } from '../resource'
 import { createResourceApi } from '../resource-api'
 
+// Module-level cache survives component remounts (navigation away and back).
+// Keyed by refSpec.path so two fields pointing at the same resource share entries.
+const globalLabelCache = ref<Record<string, Record<string, string>>>({})
+// Tracks IDs currently being fetched to prevent duplicate concurrent requests.
+const inFlightIds = new Map<string, Set<string>>()
+
+/** Resets the label cache. Intended for use in tests only. */
+export function clearLabelCache() {
+  globalLabelCache.value = {}
+  inFlightIds.clear()
+}
+
 /**
  * Resolves the schema to render for a resource page.
  *
@@ -60,7 +72,19 @@ export function useResourceLabelMap(
   getItems: () => ResourceListItem<Record<string, unknown>>[],
   getSpecFields: () => Record<string, ResourceFieldDef> | undefined,
 ) {
-  const labelMap = ref<Record<string, Record<string, string>>>({})
+  // Computed view: field name → (id → label), reading from the global cache.
+  const labelMap = computed<Record<string, Record<string, string>>>(() => {
+    const specFields = getSpecFields()
+    if (!specFields) return {}
+    const result: Record<string, Record<string, string>> = {}
+    for (const [fieldName, def] of Object.entries(specFields)) {
+      if (isResourceRef(def.type)) {
+        const refSpec = def.type as ResourceSpec
+        result[fieldName] = globalLabelCache.value[refSpec.path] ?? {}
+      }
+    }
+    return result
+  })
 
   watch(
     [() => getItems(), () => getSpecFields()],
@@ -73,26 +97,34 @@ export function useResourceLabelMap(
       await Promise.allSettled(
         refFields.map(async ([fieldName, def]) => {
           const refSpec = def.type as ResourceSpec
-          const existing = labelMap.value[fieldName] ?? {}
+          const cached = globalLabelCache.value[refSpec.path] ?? {}
+          const inflight = inFlightIds.get(refSpec.path) ?? new Set<string>()
+
           const newIds = [
             ...new Set(
               items
                 .map((item) => item[fieldName])
-                .filter((id) => id != null && !existing[String(id)]),
+                .filter((id) => id != null && !cached[String(id)] && !inflight.has(String(id))),
             ),
           ]
           if (!newIds.length) return
+
+          if (!inFlightIds.has(refSpec.path)) inFlightIds.set(refSpec.path, new Set())
+          const flightSet = inFlightIds.get(refSpec.path)!
+          newIds.forEach((id) => flightSet.add(String(id)))
 
           try {
             const res = await createResourceApi(refSpec).list({ id: newIds.join(',') })
             const titleFn = refSpec.title ?? ((item: Record<string, unknown>) => String(item.id))
             const entries = res.data.map((item) => [String(item.id), titleFn(item)])
-            labelMap.value = {
-              ...labelMap.value,
-              [fieldName]: { ...existing, ...Object.fromEntries(entries) },
+            globalLabelCache.value = {
+              ...globalLabelCache.value,
+              [refSpec.path]: { ...cached, ...Object.fromEntries(entries) },
             }
           } catch (err) {
             console.warn(`[vue-prince] Failed to resolve labels for "${fieldName}":`, err)
+          } finally {
+            newIds.forEach((id) => flightSet.delete(String(id)))
           }
         }),
       )
