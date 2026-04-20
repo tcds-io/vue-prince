@@ -22,7 +22,7 @@ import { useRoute, useRouter } from 'vue-router'
 import type { ResourceSchemaField } from '../api'
 import type { ResourceEditPageProps } from '../page-props'
 import ResourceFormView from '../ui/ResourceFormView.vue'
-import { useResourceSchema, useResourceLabels } from './useResourceMeta'
+import { useResourceSchema, useResourceLabels } from './use-resource-meta'
 
 const route = useRoute()
 const router = useRouter()

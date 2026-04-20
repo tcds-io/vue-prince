@@ -21,9 +21,7 @@ type SpecFieldTypeToTs = {
 }
 
 // Maps a field's `type` to its TypeScript value type.
-type FieldTypeToTs<T extends SpecFieldType | ResourceSpec | (() => ResourceSpec)> = T extends
-  | ResourceSpec
-  | (() => ResourceSpec)
+type FieldTypeToTs<T extends SpecFieldType | (() => ResourceSpec)> = T extends () => ResourceSpec
   ? number
   : T extends SpecFieldType
     ? SpecFieldTypeToTs[T]
@@ -46,7 +44,7 @@ export type ResourceFieldDefForm = {
 }
 
 export type ResourceFieldDef = {
-  type: SpecFieldType | ResourceSpec | (() => ResourceSpec)
+  type: SpecFieldType | (() => ResourceSpec)
   values?: Array<string | number>
   label?: string
   list?: ResourceFieldDefList
@@ -69,7 +67,7 @@ export type ResourcePermissions = {
 }
 
 export type ResourceTab = {
-  resource: ResourceSpec | (() => ResourceSpec)
+  resource: () => ResourceSpec
   foreignKey?: string
   label?: string
 }
@@ -90,7 +88,7 @@ export type ResourceSpec<T = Record<string, unknown>> = {
   permissions?: ResourcePermissions
   title?: (item: T) => string
   components?: ResourcePageComponents
-  tabs?: ResourceTab[]
+  tabs?: readonly ResourceTab[]
 }
 
 type DefinedFields<S extends ResourceSpec> = Exclude<S['fields'], undefined>
@@ -110,7 +108,7 @@ export type InferResourceListModel<S extends ResourceSpec> =
     : Record<string, unknown>
 
 // Input type used by defineResource — formatters are contextually typed from `type`.
-type FieldDefInput<T extends SpecFieldType | ResourceSpec | (() => ResourceSpec)> = Omit<
+type FieldDefInput<T extends SpecFieldType | (() => ResourceSpec)> = Omit<
   ResourceFieldDef,
   'type' | 'list' | 'form'
 > & {
@@ -123,7 +121,7 @@ type FieldDefInput<T extends SpecFieldType | ResourceSpec | (() => ResourceSpec)
   }
 }
 
-type AnyFieldBase = { type: SpecFieldType | ResourceSpec | (() => ResourceSpec) }
+type AnyFieldBase = { type: SpecFieldType | (() => ResourceSpec) }
 
 type FieldsToModel<F extends Record<string, AnyFieldBase> | undefined> =
   F extends Record<string, AnyFieldBase>
@@ -140,13 +138,22 @@ export function hasPermission(spec: ResourceSpec, action: keyof ResourcePermissi
 export function defineResource<
   // Default to Record<never, ...> so omitting `fields` is valid (F is inferred as empty).
   const F extends Record<string, AnyFieldBase> = Record<never, AnyFieldBase>,
-  const S extends Omit<ResourceSpec, 'fields' | 'title'> = Omit<ResourceSpec, 'fields' | 'title'>,
+  S extends Omit<ResourceSpec, 'fields' | 'title'> = Omit<ResourceSpec, 'fields' | 'title'>,
 >(
   spec: S & {
     // Direct mapped type (no conditional) so TypeScript can infer F via homomorphic inference.
     fields?: { [K in keyof F]: FieldDefInput<F[K]['type']> }
-    title?: (item: FieldsToModel<F>) => string
+    // Return type is unknown to tolerate circular-ref inference widening FieldsToModel<F>.
+    title?: (item: FieldsToModel<F>) => unknown
   },
-): S & { fields?: F; title?: (item: Record<string, unknown>) => string } {
-  return spec as S & { fields?: F; title?: (item: Record<string, unknown>) => string }
+): S & {
+  fields?: F
+  title?: (item: Record<string, unknown>) => string
+  tabs?: readonly ResourceTab[]
+} {
+  return spec as S & {
+    fields?: F
+    title?: (item: Record<string, unknown>) => string
+    tabs?: readonly ResourceTab[]
+  }
 }

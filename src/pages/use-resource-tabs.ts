@@ -15,8 +15,8 @@ function pluralize(word: string): string {
   return word + 's'
 }
 
-function resolveTabSpec(tab: { resource: ResourceSpec | (() => ResourceSpec) }): ResourceSpec {
-  return typeof tab.resource === 'function' ? tab.resource() : tab.resource
+function resolveTabSpec(tab: { resource: () => ResourceSpec }): ResourceSpec {
+  return tab.resource()
 }
 
 function specToSchema(spec: ResourceSpec): ResourceSchemaField[] {

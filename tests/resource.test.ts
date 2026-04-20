@@ -85,8 +85,10 @@ describe('defineResource', () => {
     const result = defineResource({
       name: 'company',
       endpoints: companyEndpoints,
-      fields: { owner_id: { type: userSpec } },
+      fields: { owner_id: { type: () => userSpec } },
     })
-    expect(result.fields?.owner_id.type).toBe(userSpec)
+    const typeRef = result.fields?.owner_id.type
+    expect(typeof typeRef).toBe('function')
+    expect((typeRef as () => typeof userSpec)()).toBe(userSpec)
   })
 })

@@ -75,7 +75,7 @@ import { hasPermission, isResourceRef, resolveFieldType } from '../resource'
 import PrinceButton from '../ui/PrinceButton.vue'
 import PrinceCard from '../ui/PrinceCard.vue'
 import ResourceListView from '../ui/ResourceListView.vue'
-import { useResourceLabels, useResourceLabelMap, useResourceSchema } from './useResourceMeta'
+import { useResourceLabels, useResourceLabelMap, useResourceSchema } from './use-resource-meta'
 
 const route = useRoute()
 const router = useRouter()
