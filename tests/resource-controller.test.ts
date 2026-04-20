@@ -3,7 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { configureVuePrince } from '../src'
 import { createResourceController } from '../src'
 
-const BASE_PATH = '/api/companies'
+const BASE_API = '/api/companies'
 
 function mockFetch(body: unknown, status = 200) {
   return vi.fn().mockResolvedValue({
@@ -12,8 +12,8 @@ function mockFetch(body: unknown, status = 200) {
   })
 }
 
-function makeSpec(path = BASE_PATH) {
-  return { name: 'company', path }
+function makeSpec(api = BASE_API) {
+  return { name: 'company', endpoints: { api, route: '/companies' } }
 }
 
 describe('createResourceController', () => {

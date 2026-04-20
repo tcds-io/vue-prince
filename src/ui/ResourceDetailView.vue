@@ -10,7 +10,7 @@
         :name="field.name"
         :type="resolveDisplayType(fields?.[field.name]?.type, field.type)"
         :resource="resource ?? 'field'"
-        :value="item[field.name]"
+        :value="fieldDisplayValue(field.name)"
         :label="labels?.[field.name] ?? toFieldLabel(field.name)"
         page="VIEW"
         :options="fields?.[field.name]?.values ?? field.values ?? []"
@@ -48,6 +48,13 @@ function resolveDisplayType(
 function getResourceFieldProps(specType: ResourceFieldDef['type'] | undefined) {
   const refSpec = isResourceRef(specType) ? specType : undefined
   return refSpec ? buildResourceFieldProps(refSpec) : {}
+}
+
+function fieldDisplayValue(name: string): unknown {
+  const raw = props.item?.[name]
+  const def = props.fields?.[name]
+  if (!def || isResourceRef(def.type)) return raw
+  return def.form?.formatter?.(raw) ?? raw
 }
 
 const props = defineProps<{

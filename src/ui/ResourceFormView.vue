@@ -12,7 +12,7 @@
         :is="resolveFieldComponent(fields?.[field.name]?.type ?? field.type, 'form')"
         v-for="field in schema"
         :key="field.name"
-        v-model:value="formData[field.name]"
+        :value="displayFormValue(field.name)"
         :name="field.name"
         :type="resolveDisplayType(fields?.[field.name]?.type, field.type)"
         :resource="resource ?? 'field'"
@@ -21,6 +21,7 @@
         :options="fields?.[field.name]?.values ?? field.values ?? []"
         :read-only="fields?.[field.name]?.form?.readOnly ?? false"
         v-bind="getResourceFieldProps(fields?.[field.name]?.type)"
+        @update:value="formData[field.name] = $event"
       />
     </form>
 
@@ -88,6 +89,14 @@ const headerTitle = computed(() => {
   if (props.itemTitle) return props.itemTitle
   return `${resourceLabel.value} ${props.item?.id ?? ''}`
 })
+
+function displayFormValue(name: string): unknown {
+  const raw = formData[name]
+  const fieldDef = props.fields?.[name]
+  if (fieldDef?.form?.readOnly && fieldDef.form.formatter && !isResourceRef(fieldDef.type))
+    return fieldDef.form.formatter(raw)
+  return raw
+}
 
 const formData = reactive<Record<string, unknown>>({})
 

@@ -102,7 +102,11 @@ describe('useResourceSchema', () => {
 })
 
 describe('useResourceLabelMap', () => {
-  const companySpec = { name: 'company', path: '/companies', title: (i: any) => i.name }
+  const companySpec = {
+    name: 'company',
+    endpoints: { api: '/companies', route: '/companies' },
+    title: (i: any) => i.name,
+  }
   const specFields = { company_id: { type: companySpec } }
 
   function mockApi(data: unknown[]) {
@@ -229,7 +233,7 @@ describe('useResourceLabelMap', () => {
   })
 
   it('uses String(item.id) as title when spec.title is absent', async () => {
-    const specWithoutTitle = { name: 'tag', path: '/tags' }
+    const specWithoutTitle = { name: 'tag', endpoints: { api: '/tags', route: '/tags' } }
     const fieldsWithoutTitle = { tag_id: { type: specWithoutTitle } }
     vi.mocked(createResourceApi).mockReturnValue({
       list: vi.fn().mockResolvedValue({ data: [{ id: 42, _resource: 'tag' }], meta: {} }),

@@ -51,7 +51,7 @@ export type ResourceFieldDef = {
 }
 
 export function isResourceRef(type: unknown): type is ResourceSpec {
-  return typeof type === 'object' && type !== null && 'path' in type && 'name' in type
+  return typeof type === 'object' && type !== null && 'endpoints' in type && 'name' in type
 }
 
 export type ResourcePermissions = {
@@ -71,7 +71,7 @@ export type ResourcePageComponents = {
 
 export type ResourceSpec<T = Record<string, unknown>> = {
   name: string
-  path: string
+  endpoints: { api: string; route: string }
   fields?: Record<string, ResourceFieldDef>
   permissions?: ResourcePermissions
   title?: (item: T) => string

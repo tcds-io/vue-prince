@@ -4,13 +4,12 @@ import ResourceField from '../../../src/ui/fields/ResourceField.vue'
 import type { FieldPage } from '../../../src/field-props'
 import type { ResourceSpec } from '../../../src/resource'
 
-const refSpec: ResourceSpec = { name: 'user', path: '/api/users' }
+vi.mock('vue-router', () => ({
+  useRouter: vi.fn(() => ({ resolve: (path: string) => ({ href: path }) })),
+  RouterLink: { name: 'RouterLink', props: ['to'], template: '<a :href="to"><slot /></a>' },
+}))
 
-const routerLinkStub = {
-  name: 'RouterLink',
-  props: ['to'],
-  template: '<a :href="to"><slot /></a>',
-}
+const refSpec: ResourceSpec = { name: 'user', endpoints: { api: '/api/users', route: '/users' } }
 
 function makeMockSearch(results = [{ id: 1, label: 'Alice' }]) {
   return vi.fn().mockResolvedValue(results)
@@ -39,9 +38,6 @@ function mountField(
       title: (item: any) => item.name,
       ...overrides,
     },
-    global: {
-      stubs: { RouterLink: routerLinkStub },
-    },
   })
 }
 
@@ -63,21 +59,30 @@ describe('ResourceField', () => {
   })
 
   describe('display mode (LIST / VIEW)', () => {
-    it('renders a RouterLink when value is set', () => {
+    it('renders an open-link anchor with the resource URL', () => {
       const wrapper = mountField('LIST', 42)
-      const link = wrapper.find('a')
+      const link = wrapper.find('a.open-link')
       expect(link.exists()).toBe(true)
-      expect(link.attributes('href')).toBe('/users/42')
+      expect(link.attributes('href')).toBe('/users/42') // endpoints.route + '/' + value
+      expect(link.attributes('target')).toBe('_blank')
     })
 
     it('renders em dash when value is null', () => {
       const wrapper = mountField('LIST', null)
-      expect(wrapper.find('span').text()).toBe('—')
-      expect(wrapper.find('a').exists()).toBe(false)
+      expect(wrapper.find('span.field-value').text()).toBe('—')
+      expect(wrapper.find('a.open-link').exists()).toBe(false)
     })
 
     it('does not render an input in display mode', () => {
       expect(mountField('VIEW', 1).find('input').exists()).toBe(false)
+    })
+
+    it('loads and shows the label via fetchLabel in display mode', async () => {
+      const fetchLabel = vi.fn().mockResolvedValue('Alice')
+      const wrapper = mountField('VIEW', 42, { fetchLabel })
+      await flushPromises()
+      expect(fetchLabel).toHaveBeenCalledWith(42)
+      expect(wrapper.find('span.field-value').text()).toContain('Alice')
     })
   })
 
@@ -106,10 +111,10 @@ describe('ResourceField', () => {
   })
 
   describe('readOnly', () => {
-    it('renders a RouterLink instead of input when readOnly on EDIT', () => {
+    it('renders open-link instead of input when readOnly on EDIT', () => {
       const wrapper = mountField('EDIT', 5, { readOnly: true })
       expect(wrapper.find('input').exists()).toBe(false)
-      expect(wrapper.find('a').exists()).toBe(true)
+      expect(wrapper.find('a.open-link').exists()).toBe(true)
     })
   })
 

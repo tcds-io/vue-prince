@@ -31,7 +31,7 @@ const CustomList = defineComponent({ name: 'CustomList', template: '<div />' })
 
 const BASE_SPEC = {
   name: 'company',
-  path: '/api/companies',
+  endpoints: { api: '/api/companies', route: '/companies' },
   fields: { id: { type: 'integer' as const }, name: { type: 'string' as const } },
 }
 
@@ -81,7 +81,7 @@ describe('ResourceListPage', () => {
     })
 
     it('calls fetchSchema when spec has no fields', async () => {
-      mountPage({ name: 'company', path: '/api/companies' })
+      mountPage({ name: 'company', endpoints: { api: '/api/companies', route: '/companies' } })
       await flushPromises()
       expect(store.fetchSchema).toHaveBeenCalled()
     })
