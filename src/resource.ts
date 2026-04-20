@@ -120,7 +120,8 @@ type FieldsToModel<F extends Record<string, AnyFieldBase> | undefined> =
 export function hasPermission(spec: ResourceSpec, action: keyof ResourcePermissions): boolean {
   const required = spec.permissions?.[action]
   if (!required) return true
-  return (getConfig().userPermissions?.() ?? []).includes(required)
+  const perms = getConfig().userPermissions?.()
+  return perms ? perms.includes(required) : true
 }
 
 export function defineResource<

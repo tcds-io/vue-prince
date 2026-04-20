@@ -84,11 +84,9 @@ const resourceLabel = computed(() => {
   return name.charAt(0).toUpperCase() + name.slice(1)
 })
 
-const headerTitle = computed(() => {
-  if (props.page === 'CREATE') return resourceLabel.value
-  if (props.itemTitle) return props.itemTitle
-  return `${resourceLabel.value} ${props.item?.id ?? ''}`
-})
+const headerTitle = computed(() =>
+  props.page === 'CREATE' ? `Create ${resourceLabel.value}` : `Edit ${resourceLabel.value}`,
+)
 
 function displayFormValue(name: string): unknown {
   const raw = formData[name]
