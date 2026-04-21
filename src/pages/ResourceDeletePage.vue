@@ -1,12 +1,19 @@
 <template>
   <component :is="customComponent" v-if="customComponent" v-bind="customProps" />
   <PrinceCard v-else :title="`Delete ${displayTitle}`">
-    <div v-if="store.loading" class="loading">Loading…</div>
-    <div v-else-if="store.error" class="error">{{ store.error }}</div>
-    <p v-else class="vue-resource delete-message">
-      You are deleting <strong>{{ displayTitle }}</strong
-      >. Are you sure you want to continue?
-    </p>
+    <div v-if="store.loading">Loading…</div>
+    <div v-else-if="store.error && !store.item" class="vue-resource prince-error">
+      Failed to load {{ displayTitle }}
+    </div>
+    <template v-else>
+      <p class="vue-resource delete-message">
+        You are deleting <strong>{{ displayTitle }}</strong
+        >. Are you sure you want to continue?
+      </p>
+      <div v-if="store.error" class="vue-resource prince-error">
+        Failed to delete {{ displayTitle }}
+      </div>
+    </template>
     <template #footer>
       <PrinceButton type="Cancel" @click="cancel" />
       <PrinceButton type="Delete" @click="confirm">Delete {{ displayTitle }}</PrinceButton>
@@ -45,7 +52,7 @@ function cancel() {
 
 async function confirm() {
   await store.remove(id)
-  router.push({ name: `${segment.value}-list` })
+  if (!store.error) router.push({ name: `${segment.value}-list` })
 }
 
 const customComponent = computed(() => route.meta.spec?.components?.delete)

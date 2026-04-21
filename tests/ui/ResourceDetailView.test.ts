@@ -47,7 +47,7 @@ describe('ResourceDetailView', () => {
 
   describe('error state', () => {
     it('shows the error message', () => {
-      expect(mountDetail({ error: 'Not found' }).text()).toContain('Not found')
+      expect(mountDetail({ error: 'Not found' }).text()).toContain('Failed to load Company')
     })
 
     it('does not render item fields on error', () => {

@@ -47,14 +47,14 @@ describe('ResourceFormView', () => {
   })
 
   describe('error state', () => {
-    it('shows the error message', () => {
+    it('shows a friendly error message', () => {
       const wrapper = mountForm({ error: 'Server error' })
-      expect(wrapper.text()).toContain('Server error')
+      expect(wrapper.text()).toContain('Failed to create Company')
     })
 
-    it('does not render the form', () => {
+    it('still renders the form', () => {
       const wrapper = mountForm({ error: 'Server error' })
-      expect(wrapper.find('form').exists()).toBe(false)
+      expect(wrapper.find('form').exists()).toBe(true)
     })
   })
 

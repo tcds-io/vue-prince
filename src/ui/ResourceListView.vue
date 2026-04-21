@@ -1,6 +1,8 @@
 <template>
   <div>
-    <div v-if="error">{{ error }}</div>
+    <div v-if="error" class="vue-resource prince-error">
+      Failed to list {{ resourceLabelPlural }}
+    </div>
     <div v-else :style="{ opacity: loading ? 0.5 : 1, transition: 'opacity 0.15s' }">
       <component :is="tableWrapper" v-if="tableWrapper" v-bind="props">
         <table :class="['vue-resource', 'resource-table', resource && `${resource}-table`]">
@@ -18,13 +20,7 @@
               >
                 {{ labels?.[field.name] ?? toFieldLabel(field.name) }}
               </th>
-              <th v-if="itemActions?.length || listActions?.length" class="field--actions">
-                <component
-                  :is="dropdownComponent"
-                  v-if="listActions?.length"
-                  :actions="listActions"
-                />
-              </th>
+              <th v-if="visibleItemActions.length" class="field--actions" />
             </tr>
           </thead>
           <tbody>
@@ -50,16 +46,8 @@
                   item[field.name]
                 }}
               </td>
-              <td
-                v-if="itemActions?.length || listActions?.length"
-                class="field--actions"
-                @click.stop
-              >
-                <component
-                  :is="dropdownComponent"
-                  v-if="itemActions?.length"
-                  :actions="resolveItemActions(item)"
-                />
+              <td v-if="visibleItemActions.length" class="field--actions" @click.stop>
+                <component :is="dropdownComponent" :actions="resolveItemActions(item)" />
               </td>
             </tr>
           </tbody>
@@ -80,7 +68,7 @@
             >
               {{ labels?.[field.name] ?? toFieldLabel(field.name) }}
             </th>
-            <th v-if="itemActions?.length" class="field--actions" />
+            <th v-if="visibleItemActions.length" class="field--actions" />
           </tr>
         </thead>
         <tbody>
@@ -105,7 +93,7 @@
                 props.fields?.[field.name]?.list?.formatter?.(item[field.name]) ?? item[field.name]
               }}
             </td>
-            <td v-if="itemActions?.length" class="field--actions" @click.stop>
+            <td v-if="visibleItemActions.length" class="field--actions" @click.stop>
               <component :is="dropdownComponent" :actions="resolveItemActions(item)" />
             </td>
           </tr>
@@ -118,7 +106,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { ResourceListItem, ResourceSchemaField } from '../api'
-import type { ResourceFieldDef, ResourceItemAction, ResourceListAction } from '../resource'
+import type { ResourceFieldDef, ResourceItemAction } from '../resource'
+import { hasActionPermission } from '../resource'
 import { getConfig } from '../config'
 import { toFieldLabel, slugify } from './fields'
 import PrinceDropdown from './PrinceDropdown.vue'
@@ -133,15 +122,29 @@ const props = defineProps<{
   error: string | null
   onRowClick?: (item: ResourceListItem<Record<string, unknown>>) => void
   itemActions?: ResourceItemAction[]
-  listActions?: ResourceListAction[]
 }>()
 
 const tableWrapper = getConfig().layout?.table
 const dropdownComponent = computed(() => getConfig().layout?.dropdown ?? PrinceDropdown)
 
+function pluralize(word: string): string {
+  if (/[^aeiou]y$/i.test(word)) return word.slice(0, -1) + 'ies'
+  if (/(s|sh|ch|x|z)$/i.test(word)) return word + 'es'
+  return word + 's'
+}
+const resourceLabel = computed(() => {
+  const n = props.resource ?? ''
+  return n.charAt(0).toUpperCase() + n.slice(1)
+})
+const resourceLabelPlural = computed(() => pluralize(resourceLabel.value))
+
+const visibleItemActions = computed(() =>
+  (props.itemActions ?? []).filter((a) => hasActionPermission(a.permission)),
+)
+
 function resolveItemActions(item: ResourceListItem<Record<string, unknown>>) {
-  return (props.itemActions ?? []).map((a) => ({
-    label: a.label,
+  return visibleItemActions.value.map((a) => ({
+    label: typeof a.label === 'function' ? a.label(item) : a.label,
     onClick: () => a.onClick(item),
   }))
 }
@@ -161,6 +164,12 @@ function tdStyle(name: string): Record<string, string> {
 </script>
 
 <style>
+.vue-resource.prince-error {
+  color: var(--prince-color-danger, #dc3545);
+  font-size: var(--prince-font-size-sm, 0.8125rem);
+  padding: 8px 0;
+}
+
 .vue-resource.resource-table {
   width: 100%;
   border-collapse: collapse;
