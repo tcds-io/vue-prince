@@ -11,15 +11,13 @@
       :error="store.error"
       :item-title="itemTitle"
     >
+      <template v-if="resourceActions.length" #header>
+        <component :is="dropdownComponent" :actions="resourceActions" />
+      </template>
       <template #footer>
         <PrinceButton type="Back" @click="back" />
         <PrinceButton v-if="canEdit" type="Edit" @click="edit" />
         <PrinceButton v-if="canDelete" type="Delete" @click="confirmDelete" />
-        <component
-          :is="dropdownComponent"
-          v-if="resourceActions.length"
-          :actions="resourceActions"
-        />
       </template>
     </ResourceDetailView>
 

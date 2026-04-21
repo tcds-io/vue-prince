@@ -18,7 +18,13 @@
               >
                 {{ labels?.[field.name] ?? toFieldLabel(field.name) }}
               </th>
-              <th v-if="itemActions?.length" class="field--actions" />
+              <th v-if="itemActions?.length || listActions?.length" class="field--actions">
+                <component
+                  :is="dropdownComponent"
+                  v-if="listActions?.length"
+                  :actions="listActions"
+                />
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -44,8 +50,16 @@
                   item[field.name]
                 }}
               </td>
-              <td v-if="itemActions?.length" class="field--actions" @click.stop>
-                <component :is="dropdownComponent" :actions="resolveItemActions(item)" />
+              <td
+                v-if="itemActions?.length || listActions?.length"
+                class="field--actions"
+                @click.stop
+              >
+                <component
+                  :is="dropdownComponent"
+                  v-if="itemActions?.length"
+                  :actions="resolveItemActions(item)"
+                />
               </td>
             </tr>
           </tbody>
@@ -104,7 +118,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { ResourceListItem, ResourceSchemaField } from '../api'
-import type { ResourceFieldDef, ResourceItemAction } from '../resource'
+import type { ResourceFieldDef, ResourceItemAction, ResourceListAction } from '../resource'
 import { getConfig } from '../config'
 import { toFieldLabel, slugify } from './fields'
 import PrinceDropdown from './PrinceDropdown.vue'
@@ -119,6 +133,7 @@ const props = defineProps<{
   error: string | null
   onRowClick?: (item: ResourceListItem<Record<string, unknown>>) => void
   itemActions?: ResourceItemAction[]
+  listActions?: ResourceListAction[]
 }>()
 
 const tableWrapper = getConfig().layout?.table
@@ -169,7 +184,7 @@ function tdStyle(name: string): Record<string, string> {
 
 .vue-resource.resource-table th.field--actions,
 .vue-resource.resource-table td.field--actions {
-  width: 1%;
+  width: 40px;
   white-space: nowrap;
   padding: 4px 8px;
   text-align: right;
