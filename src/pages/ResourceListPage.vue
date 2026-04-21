@@ -1,11 +1,8 @@
 <template>
   <component :is="customComponent" v-if="customComponent" v-bind="customProps" />
   <PrinceCard v-else :title="resourceLabelPlural">
-    <template v-if="canCreate || listActions.length" #header>
-      <component :is="dropdownComponent" v-if="listActions.length" :actions="listActions" />
-      <PrinceButton v-if="canCreate" type="Create" @click="createNew"
-        >Create {{ resourceLabel }}</PrinceButton
-      >
+    <template v-if="canCreate" #header>
+      <PrinceButton type="Create" @click="createNew">Create {{ resourceLabel }}</PrinceButton>
     </template>
 
     <component
@@ -33,6 +30,7 @@
       :error="store.error"
       :on-row-click="navigateToItem"
       :item-actions="route.meta.spec?.actions?.resource"
+      :list-actions="listActions"
     />
 
     <template #footer>
@@ -76,10 +74,10 @@ import type { ResourceListItem, ResourceSchemaField } from '../api'
 import type { ResourceListPageProps } from '../page-props'
 import type { ResourceFieldDef } from '../resource'
 import { hasPermission, isResourceRef, resolveFieldType } from '../resource'
-import { getConfig } from '../config'
+
 import PrinceButton from '../ui/PrinceButton.vue'
 import PrinceCard from '../ui/PrinceCard.vue'
-import PrinceDropdown from '../ui/PrinceDropdown.vue'
+
 import ResourceListView from '../ui/ResourceListView.vue'
 import { useResourceLabels, useResourceLabelMap, useResourceSchema } from './use-resource-meta'
 
@@ -172,7 +170,6 @@ function createNew() {
 
 const canCreate = computed(() => !route.meta.spec || hasPermission(route.meta.spec, 'create'))
 
-const dropdownComponent = computed(() => getConfig().layout?.dropdown ?? PrinceDropdown)
 const listActions = computed(() => route.meta.spec?.actions?.list ?? [])
 
 const customComponent = computed(() => route.meta.spec?.components?.list)
@@ -258,5 +255,11 @@ const customProps = computed<ResourceListPageProps>(() => ({
   padding: 4px 8px;
   min-width: 2rem;
   font-size: var(--prince-font-size-sm, 0.8125rem);
+}
+
+.vue-resource.prince-list-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 </style>

@@ -1,5 +1,8 @@
 <template>
   <PrinceCard :title="headerTitle">
+    <template v-if="$slots.header" #header>
+      <slot name="header" />
+    </template>
     <div v-if="loading">Loading…</div>
     <div v-else-if="error">{{ error }}</div>
     <div v-else-if="item" class="vue-resource prince-detail-body">
