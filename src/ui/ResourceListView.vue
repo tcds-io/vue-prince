@@ -18,6 +18,7 @@
               >
                 {{ labels?.[field.name] ?? toFieldLabel(field.name) }}
               </th>
+              <th v-if="itemActions?.length" class="field--actions" />
             </tr>
           </thead>
           <tbody>
@@ -43,6 +44,9 @@
                   item[field.name]
                 }}
               </td>
+              <td v-if="itemActions?.length" class="field--actions" @click.stop>
+                <component :is="dropdownComponent" :actions="resolveItemActions(item)" />
+              </td>
             </tr>
           </tbody>
         </table>
@@ -62,6 +66,7 @@
             >
               {{ labels?.[field.name] ?? toFieldLabel(field.name) }}
             </th>
+            <th v-if="itemActions?.length" class="field--actions" />
           </tr>
         </thead>
         <tbody>
@@ -86,6 +91,9 @@
                 props.fields?.[field.name]?.list?.formatter?.(item[field.name]) ?? item[field.name]
               }}
             </td>
+            <td v-if="itemActions?.length" class="field--actions" @click.stop>
+              <component :is="dropdownComponent" :actions="resolveItemActions(item)" />
+            </td>
           </tr>
         </tbody>
       </table>
@@ -94,10 +102,12 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { ResourceListItem, ResourceSchemaField } from '../api'
-import type { ResourceFieldDef } from '../resource'
+import type { ResourceFieldDef, ResourceItemAction } from '../resource'
 import { getConfig } from '../config'
 import { toFieldLabel, slugify } from './fields'
+import PrinceDropdown from './PrinceDropdown.vue'
 
 const props = defineProps<{
   items: ResourceListItem<Record<string, unknown>>[]
@@ -108,9 +118,18 @@ const props = defineProps<{
   loading: boolean
   error: string | null
   onRowClick?: (item: ResourceListItem<Record<string, unknown>>) => void
+  itemActions?: ResourceItemAction[]
 }>()
 
 const tableWrapper = getConfig().layout?.table
+const dropdownComponent = computed(() => getConfig().layout?.dropdown ?? PrinceDropdown)
+
+function resolveItemActions(item: ResourceListItem<Record<string, unknown>>) {
+  return (props.itemActions ?? []).map((a) => ({
+    label: a.label,
+    onClick: () => a.onClick(item),
+  }))
+}
 
 function thStyle(name: string): Record<string, string> {
   const list = props.fields?.[name]?.list
@@ -146,6 +165,14 @@ function tdStyle(name: string): Record<string, string> {
   font-weight: 600;
   color: var(--prince-color-text-muted, #6c757d);
   white-space: nowrap;
+}
+
+.vue-resource.resource-table th.field--actions,
+.vue-resource.resource-table td.field--actions {
+  width: 1%;
+  white-space: nowrap;
+  padding: 4px 8px;
+  text-align: right;
 }
 
 .vue-resource.resource-table td {
