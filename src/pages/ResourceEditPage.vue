@@ -10,6 +10,7 @@
     :loading="store.loading"
     :error="store.error"
     :item-title="itemTitle"
+    :validation-schema="route.meta.spec?.validationSchema"
     page="EDIT"
     @submit="submit"
     @cancel="cancel"

@@ -11,6 +11,7 @@ export interface FieldProps {
   resource: string
   page: FieldPage
   readOnly?: boolean
+  error?: string
 }
 
 /** Props for enum/select field components */

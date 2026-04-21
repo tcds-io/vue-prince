@@ -84,6 +84,13 @@ export function hasActionPermission(permission?: string): boolean {
   return perms ? perms.includes(permission) : true
 }
 
+export type ValidationSchema = {
+  safeParse: (data: unknown) => {
+    success: boolean
+    error?: { issues: Array<{ path: PropertyKey[]; message: string }> }
+  }
+}
+
 export type ResourceTab = {
   component: () => Component
   foreignKey?: string
@@ -111,6 +118,7 @@ export type ResourceSpec<T = Record<string, unknown>> = {
     list?: ResourceListAction[]
     resource?: ResourceItemAction[]
   }
+  validationSchema?: ValidationSchema
 }
 
 type DefinedFields<S extends ResourceSpec> = Exclude<S['fields'], undefined>

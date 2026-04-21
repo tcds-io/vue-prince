@@ -34,6 +34,7 @@
         </li>
       </ul>
     </div>
+    <span v-if="error" class="field-error">{{ error }}</span>
   </div>
 </template>
 

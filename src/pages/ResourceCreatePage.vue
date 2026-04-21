@@ -9,6 +9,7 @@
     :resource="route.meta.spec?.name"
     :loading="store.loading"
     :error="store.error"
+    :validation-schema="route.meta.spec?.validationSchema"
     page="CREATE"
     @submit="submit"
     @cancel="cancel"

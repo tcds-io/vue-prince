@@ -19,8 +19,9 @@
         :page="page"
         :options="fields?.[field.name]?.values ?? field.values ?? []"
         :read-only="fields?.[field.name]?.form?.readOnly ?? false"
+        :error="fieldErrors[field.name]"
         v-bind="getResourceFieldProps(fields?.[field.name]?.type)"
-        @update:value="formData[field.name] = $event"
+        @update:value="onFieldUpdate(field.name, $event)"
       />
       <div v-if="error" class="vue-resource prince-error">
         Failed to {{ actionVerb }} {{ resourceLabel }}
@@ -39,7 +40,7 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue'
 import type { ResourceSchemaField } from '../api'
-import type { ResourceFieldDef } from '../resource'
+import type { ResourceFieldDef, ValidationSchema } from '../resource'
 import { isResourceRef, resolveFieldType } from '../resource'
 import type { FieldPage } from '../field-props'
 import {
@@ -76,6 +77,7 @@ const props = defineProps<{
   error: string | null
   page: Extract<FieldPage, 'CREATE' | 'EDIT'>
   itemTitle?: string
+  validationSchema?: ValidationSchema
 }>()
 
 const emit = defineEmits<{
@@ -107,6 +109,7 @@ function displayFormValue(name: string): unknown {
 }
 
 const formData = reactive<Record<string, unknown>>({})
+const fieldErrors = reactive<Record<string, string>>({})
 
 watch(
   () => props.item,
@@ -116,7 +119,23 @@ watch(
   { immediate: true },
 )
 
+function onFieldUpdate(name: string, value: unknown) {
+  formData[name] = value
+  delete fieldErrors[name]
+}
+
 function handleSubmit() {
+  if (props.validationSchema) {
+    const result = props.validationSchema.safeParse({ ...formData })
+    if (!result.success) {
+      Object.keys(fieldErrors).forEach((k) => delete fieldErrors[k])
+      result.error?.issues.forEach(({ path, message }) => {
+        const key = path[0] != null && typeof path[0] !== 'symbol' ? String(path[0]) : ''
+        if (key && !fieldErrors[key]) fieldErrors[key] = message
+      })
+      return
+    }
+  }
   emit('submit', { ...formData })
 }
 </script>
