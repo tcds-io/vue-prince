@@ -5,6 +5,7 @@
       <option v-for="(option, i) in options" :key="i">{{ option }}</option>
     </select>
     <span v-else :class="['enum', `enum--${slugify(value)}`]">{{ value }}</span>
+    <span v-if="error" class="field-error">{{ error }}</span>
   </div>
 </template>
 

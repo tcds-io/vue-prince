@@ -9,6 +9,7 @@
     <span v-else :class="['boolean', `boolean--${Boolean(value)}`]">
       {{ value ? '✓' : '✗' }}
     </span>
+    <span v-if="error" class="field-error">{{ error }}</span>
   </div>
 </template>
 

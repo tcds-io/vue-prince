@@ -77,6 +77,13 @@
   font-weight: 600;
 }
 
+/* ── Validation error ── */
+.vue-resource.field > .field-error {
+  font-size: var(--prince-font-size-sm, 0.8125rem);
+  color: var(--prince-color-danger, #dc3545);
+  margin-top: 2px;
+}
+
 /* ── Enum badge display ── */
 .vue-resource.field .enum {
   display: inline-block;

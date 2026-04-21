@@ -3,6 +3,7 @@
     <label>{{ label }}</label>
     <input v-if="(page === 'EDIT' || page === 'CREATE') && !readOnly" v-model="value" type="text" />
     <span v-else class="field-value">{{ value }}</span>
+    <span v-if="error" class="field-error">{{ error }}</span>
   </div>
 </template>
 

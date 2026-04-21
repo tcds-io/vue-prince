@@ -8,6 +8,7 @@
       @input="value = ($event.target as HTMLInputElement).value"
     />
     <span v-else class="field-value">{{ value }}</span>
+    <span v-if="error" class="field-error">{{ error }}</span>
   </div>
 </template>
 
