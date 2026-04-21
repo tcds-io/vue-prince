@@ -15,15 +15,20 @@
         <PrinceButton type="Back" @click="back" />
         <PrinceButton v-if="canEdit" type="Edit" @click="edit" />
         <PrinceButton v-if="canDelete" type="Delete" @click="confirmDelete" />
+        <component
+          :is="dropdownComponent"
+          v-if="resourceActions.length"
+          :actions="resourceActions"
+        />
       </template>
     </ResourceDetailView>
 
-    <ResourceDetailTabs :tabs="tabs" :go-to-page="goToPage" />
+    <ResourceDetailTabs :tabs="tabs" :parent-id="id" :resource="item ?? {}" />
   </template>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { ResourceSchemaField } from '../api'
 import type { ResourceViewPageProps } from '../page-props'
@@ -31,8 +36,10 @@ import ResourceDetailView from '../ui/ResourceDetailView.vue'
 import ResourceDetailTabs from './ResourceDetailTabs.vue'
 import PrinceButton from '../ui/PrinceButton.vue'
 import { hasPermission } from '../resource'
+import { getConfig } from '../config'
 import { useResourceSchema, useResourceLabels } from './use-resource-meta'
 import { useResourceTabs } from './use-resource-tabs'
+import PrinceDropdown from '../ui/PrinceDropdown.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -50,9 +57,7 @@ const labels = useResourceLabels()
 
 const item = computed(() => store.item as Record<string, unknown> | null)
 
-const { tabs, goToPage } = route.meta.spec
-  ? useResourceTabs(route.meta.spec, () => id)
-  : { tabs: ref([]), goToPage: () => {} }
+const { tabs } = route.meta.spec ? useResourceTabs(route.meta.spec) : { tabs: [] }
 
 const itemTitle = computed(() => {
   const titleFn = route.meta.spec?.title
@@ -80,6 +85,13 @@ function confirmDelete() {
 const canEdit = computed(() => !route.meta.spec || hasPermission(route.meta.spec, 'update'))
 const canDelete = computed(() => !route.meta.spec || hasPermission(route.meta.spec, 'delete'))
 
+const dropdownComponent = computed(() => getConfig().layout?.dropdown ?? PrinceDropdown)
+const resourceActions = computed(() => {
+  const actions = route.meta.spec?.actions?.resource ?? []
+  const currentItem = item.value ?? {}
+  return actions.map((a) => ({ label: a.label, onClick: () => a.onClick(currentItem) }))
+})
+
 const customComponent = computed(() => route.meta.spec?.components?.view)
 
 const customProps = computed<ResourceViewPageProps>(() => ({
@@ -95,6 +107,6 @@ const customProps = computed<ResourceViewPageProps>(() => ({
   confirmDelete,
   canEdit: canEdit.value,
   canDelete: canDelete.value,
-  tabs: tabs.value,
+  tabs,
 }))
 </script>

@@ -66,8 +66,18 @@ export type ResourcePermissions = {
   delete?: string
 }
 
+export type ResourceListAction = {
+  label: string
+  onClick: () => void
+}
+
+export type ResourceItemAction<T = Record<string, unknown>> = {
+  label: string
+  onClick: (resource: T) => void
+}
+
 export type ResourceTab = {
-  resource: () => ResourceSpec
+  component: () => Component
   foreignKey?: string
   label?: string
 }
@@ -89,6 +99,10 @@ export type ResourceSpec<T = Record<string, unknown>> = {
   title?: (item: T) => string
   components?: ResourcePageComponents
   tabs?: readonly ResourceTab[]
+  actions?: {
+    list?: ResourceListAction[]
+    resource?: ResourceItemAction[]
+  }
 }
 
 type DefinedFields<S extends ResourceSpec> = Exclude<S['fields'], undefined>

@@ -1,0 +1,122 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { mount, flushPromises } from '@vue/test-utils'
+import ResourceTabView from '../../src/pages/ResourceTabView.vue'
+
+vi.mock('../../src/resource-api', () => ({ createResourceApi: vi.fn() }))
+vi.mock('vue-router', () => ({
+  useRouter: () => ({
+    resolve: (location: { name: string; params: { id: string | number } }) => ({
+      href: `/users/${location.params.id}`,
+    }),
+  }),
+}))
+
+import { createResourceApi } from '../../src/resource-api'
+
+const userSpec = {
+  name: 'user',
+  endpoints: { api: '/api/users', route: '/users' },
+  fields: {
+    id: { type: 'integer' as const },
+    name: { type: 'string' as const },
+    company_id: { type: 'integer' as const },
+  },
+}
+
+const defaultProps = {
+  spec: userSpec,
+  parentId: 1,
+  foreignKey: 'company_id',
+  resource: { id: 1, name: 'Acme' },
+}
+
+beforeEach(() => {
+  vi.mocked(createResourceApi).mockReset()
+  vi.mocked(createResourceApi).mockReturnValue({
+    list: vi.fn().mockResolvedValue({ data: [], meta: null }),
+  } as any)
+})
+
+describe('ResourceTabView', () => {
+  it('fetches items on mount using parentId and foreignKey', async () => {
+    const mockList = vi.fn().mockResolvedValue({ data: [], meta: null })
+    vi.mocked(createResourceApi).mockReturnValue({ list: mockList } as any)
+    mount(ResourceTabView, {
+      props: defaultProps,
+      global: { stubs: { ResourceListView: true, PrinceButton: true } },
+    })
+    await flushPromises()
+    expect(mockList).toHaveBeenCalledWith({ company_id: '1', page: '1' })
+  })
+
+  it('opens row in new browser tab on row click', async () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+    const users = [{ id: 7, name: 'Alice', company_id: 1, _resource: 'user' }]
+    vi.mocked(createResourceApi).mockReturnValue({
+      list: vi.fn().mockResolvedValue({ data: users, meta: null }),
+    } as any)
+
+    const wrapper = mount(ResourceTabView, {
+      props: defaultProps,
+      global: { stubs: { PrinceButton: true } },
+    })
+    await flushPromises()
+
+    const row = wrapper.find('tbody tr')
+    await row.trigger('click')
+
+    expect(openSpy).toHaveBeenCalledWith('/users/7', '_blank')
+    openSpy.mockRestore()
+  })
+
+  it('does not render pagination when last_page is 1', async () => {
+    vi.mocked(createResourceApi).mockReturnValue({
+      list: vi.fn().mockResolvedValue({
+        data: [],
+        meta: { current_page: 1, last_page: 1, total: 5, per_page: 10 },
+      }),
+    } as any)
+    const wrapper = mount(ResourceTabView, {
+      props: defaultProps,
+      global: { stubs: { ResourceListView: true, PrinceButton: true } },
+    })
+    await flushPromises()
+    expect(wrapper.find('.prince-pagination').exists()).toBe(false)
+  })
+
+  it('renders pagination when last_page > 1', async () => {
+    vi.mocked(createResourceApi).mockReturnValue({
+      list: vi.fn().mockResolvedValue({
+        data: [],
+        meta: {
+          resource: 'user',
+          schema: [],
+          current_page: 1,
+          last_page: 3,
+          total: 30,
+          per_page: 10,
+        },
+      }),
+    } as any)
+    const wrapper = mount(ResourceTabView, {
+      props: defaultProps,
+      global: { stubs: { ResourceListView: true, PrinceButton: true } },
+    })
+    await flushPromises()
+    expect(wrapper.find('.prince-pagination').exists()).toBe(true)
+  })
+
+  it('refetches when parentId prop changes', async () => {
+    const mockList = vi.fn().mockResolvedValue({ data: [], meta: null })
+    vi.mocked(createResourceApi).mockReturnValue({ list: mockList } as any)
+    const wrapper = mount(ResourceTabView, {
+      props: defaultProps,
+      global: { stubs: { ResourceListView: true, PrinceButton: true } },
+    })
+    await flushPromises()
+    mockList.mockClear()
+    await wrapper.setProps({ parentId: 99 })
+    await flushPromises()
+    expect(mockList).toHaveBeenCalledWith({ company_id: '99', page: '1' })
+  })
+})
