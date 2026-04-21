@@ -2,7 +2,7 @@
   <component :is="customComponent" v-if="customComponent" v-bind="customProps" />
   <ResourceFormView
     v-else
-    :item="null"
+    :item="initialItem"
     :schema="schema"
     :labels="labels"
     :fields="route.meta.spec?.fields"
@@ -20,6 +20,7 @@ import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { ResourceSchemaField } from '../api'
 import type { ResourceCreatePageProps } from '../page-props'
+import { resolveFieldType } from '../resource'
 import ResourceFormView from '../ui/ResourceFormView.vue'
 import { useResourceSchema, useResourceLabels } from './use-resource-meta'
 
@@ -28,6 +29,19 @@ const router = useRouter()
 const store = route.meta.useStore!()
 
 const segment = computed(() => route.meta.spec?.endpoints.route.split('/').pop())
+
+const initialItem = computed(() => {
+  const fields = route.meta.spec?.fields
+  const entries = Object.entries(route.query).filter(([, v]) => v != null)
+  if (entries.length === 0) return null
+  return Object.fromEntries(
+    entries.map(([k, v]) => {
+      const fieldType = fields?.[k] ? resolveFieldType(fields[k].type) : null
+      const numeric = fieldType === 'integer' || fieldType === 'number'
+      return [k, numeric ? Number(v) : v]
+    }),
+  )
+})
 
 const schema = useResourceSchema(() => store.schemaFields as ResourceSchemaField[])
 const labels = useResourceLabels()

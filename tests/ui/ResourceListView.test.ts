@@ -34,7 +34,7 @@ describe('ResourceListView', () => {
   describe('error state', () => {
     it('shows the error message', () => {
       const wrapper = mountView({ error: 'Network error' })
-      expect(wrapper.text()).toContain('Network error')
+      expect(wrapper.text()).toContain('Failed to list Companies')
     })
 
     it('does not render the table', () => {

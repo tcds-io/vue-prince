@@ -14,13 +14,25 @@
   </div>
 </template>
 
+<script lang="ts">
+import { ref } from 'vue'
+const activeDropdown = ref<symbol | null>(null)
+</script>
+
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import type { LayoutDropdownProps } from '../config'
 
 defineProps<LayoutDropdownProps>()
 
-const open = ref(false)
+const id = Symbol()
+const open = computed({
+  get: () => activeDropdown.value === id,
+  set: (val) => {
+    activeDropdown.value = val ? id : null
+  },
+})
+
 const container = ref<HTMLElement>()
 
 function run(action: { label: string; onClick: () => void }) {

@@ -4,7 +4,9 @@
       <slot name="header" />
     </template>
     <div v-if="loading">Loading…</div>
-    <div v-else-if="error">{{ error }}</div>
+    <div v-else-if="error" class="vue-resource prince-error">
+      Failed to load {{ resourceLabel }}
+    </div>
     <div v-else-if="item" class="vue-resource prince-detail-body">
       <component
         :is="resolveFieldComponent(fields?.[field.name]?.type ?? field.type, 'display')"
@@ -73,6 +75,11 @@ const props = defineProps<{
   itemTitle?: string
 }>()
 
+const resourceLabel = computed(() => {
+  const n = props.resource ?? ''
+  return n.charAt(0).toUpperCase() + n.slice(1)
+})
+
 const headerTitle = computed(() => {
   if (props.itemTitle) return props.itemTitle
   const name = props.resource ?? ''
@@ -82,6 +89,12 @@ const headerTitle = computed(() => {
 </script>
 
 <style>
+.vue-resource.prince-error {
+  color: var(--prince-color-danger, #dc3545);
+  font-size: var(--prince-font-size-sm, 0.8125rem);
+  padding: 8px 0;
+}
+
 .vue-resource.prince-detail-body {
   display: flex;
   flex-direction: column;

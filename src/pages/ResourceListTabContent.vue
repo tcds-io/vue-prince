@@ -9,29 +9,37 @@
     :error="error"
     :on-row-click="(row) => navigate(row as { id: string | number })"
   />
-  <div v-if="listMeta && listMeta.last_page > 1" class="vue-resource prince-pagination">
-    <PrinceButton type="Pagination" label="|←" :disabled="page <= 1" @click="goToPage(1)" />
-    <PrinceButton type="Pagination" label="←" :disabled="page <= 1" @click="goToPage(page - 1)" />
-    <PrinceButton
-      v-for="p in pages"
-      :key="p"
-      type="Pagination"
-      :label="String(p)"
-      :variant="p === page ? 'primary' : undefined"
-      @click="goToPage(p)"
-    />
-    <PrinceButton
-      type="Pagination"
-      label="→"
-      :disabled="page >= listMeta.last_page"
-      @click="goToPage(page + 1)"
-    />
-    <PrinceButton
-      type="Pagination"
-      label="→|"
-      :disabled="page >= listMeta.last_page"
-      @click="goToPage(listMeta.last_page)"
-    />
+  <div
+    v-if="canCreate || (listMeta && listMeta.last_page > 1)"
+    class="vue-resource prince-tab-footer"
+  >
+    <div v-if="listMeta && listMeta.last_page > 1" class="vue-resource prince-pagination">
+      <PrinceButton type="Pagination" label="|←" :disabled="page <= 1" @click="goToPage(1)" />
+      <PrinceButton type="Pagination" label="←" :disabled="page <= 1" @click="goToPage(page - 1)" />
+      <PrinceButton
+        v-for="p in pages"
+        :key="p"
+        type="Pagination"
+        :label="String(p)"
+        :variant="p === page ? 'primary' : undefined"
+        @click="goToPage(p)"
+      />
+      <PrinceButton
+        type="Pagination"
+        label="→"
+        :disabled="page >= listMeta.last_page"
+        @click="goToPage(page + 1)"
+      />
+      <PrinceButton
+        type="Pagination"
+        label="→|"
+        :disabled="page >= listMeta.last_page"
+        @click="goToPage(listMeta.last_page)"
+      />
+    </div>
+    <PrinceButton v-if="canCreate" type="Create" @click="createNew"
+      >Create {{ resourceLabel }}</PrinceButton
+    >
   </div>
 </template>
 
@@ -40,7 +48,7 @@ import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import type { ResourceListItem, ResourceListMetadata, ResourceSchemaField } from '../api'
 import type { ResourceSpec } from '../resource'
-import { isResourceRef, resolveFieldType } from '../resource'
+import { hasPermission, isResourceRef, resolveFieldType } from '../resource'
 import { createResourceApi } from '../resource-api'
 import ResourceListView from '../ui/ResourceListView.vue'
 import PrinceButton from '../ui/PrinceButton.vue'
@@ -111,4 +119,32 @@ function navigate(row: { id: string | number }) {
   const segment = props.spec.endpoints.route.split('/').pop()
   router.push({ name: `${segment}-detail`, params: { id: row.id } })
 }
+
+const canCreate = computed(() => hasPermission(props.spec, 'create'))
+const resourceLabel = computed(() => {
+  const n = props.spec.name
+  return n.charAt(0).toUpperCase() + n.slice(1)
+})
+
+function createNew() {
+  const segment = props.spec.endpoints.route.split('/').pop()
+  router.push({
+    name: `${segment}-create`,
+    query: props.parentId != null ? { [props.foreignKey]: String(props.parentId) } : {},
+  })
+}
 </script>
+
+<style>
+.vue-resource.prince-tab-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 8px;
+}
+
+.vue-resource.prince-tab-footer .prince-pagination {
+  margin-right: auto;
+}
+</style>

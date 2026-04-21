@@ -33,7 +33,7 @@ import type { ResourceViewPageProps } from '../page-props'
 import ResourceDetailView from '../ui/ResourceDetailView.vue'
 import ResourceDetailTabs from './ResourceDetailTabs.vue'
 import PrinceButton from '../ui/PrinceButton.vue'
-import { hasPermission } from '../resource'
+import { hasPermission, hasActionPermission } from '../resource'
 import { getConfig } from '../config'
 import { useResourceSchema, useResourceLabels } from './use-resource-meta'
 import { useResourceTabs } from './use-resource-tabs'
@@ -87,7 +87,12 @@ const dropdownComponent = computed(() => getConfig().layout?.dropdown ?? PrinceD
 const resourceActions = computed(() => {
   const actions = route.meta.spec?.actions?.resource ?? []
   const currentItem = item.value ?? {}
-  return actions.map((a) => ({ label: a.label, onClick: () => a.onClick(currentItem) }))
+  return actions
+    .filter((a) => hasActionPermission(a.permission))
+    .map((a) => ({
+      label: typeof a.label === 'function' ? a.label(currentItem) : a.label,
+      onClick: () => a.onClick(currentItem),
+    }))
 })
 
 const customComponent = computed(() => route.meta.spec?.components?.view)

@@ -69,11 +69,19 @@ export type ResourcePermissions = {
 export type ResourceListAction = {
   label: string
   onClick: () => void
+  permission?: string
 }
 
 export type ResourceItemAction<T = Record<string, unknown>> = {
-  label: string
+  label: string | ((resource: T) => string)
   onClick: (resource: T) => void
+  permission?: string
+}
+
+export function hasActionPermission(permission?: string): boolean {
+  if (!permission) return true
+  const perms = getConfig().userPermissions?.()
+  return perms ? perms.includes(permission) : true
 }
 
 export type ResourceTab = {

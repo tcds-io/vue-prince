@@ -1,7 +1,6 @@
 <template>
   <PrinceCard :title="headerTitle">
     <div v-if="loading">Loading…</div>
-    <div v-else-if="error">{{ error }}</div>
     <form
       v-else
       id="prince-resource-form"
@@ -23,6 +22,9 @@
         v-bind="getResourceFieldProps(fields?.[field.name]?.type)"
         @update:value="formData[field.name] = $event"
       />
+      <div v-if="error" class="vue-resource prince-error">
+        Failed to {{ actionVerb }} {{ resourceLabel }}
+      </div>
     </form>
 
     <template #footer>
@@ -86,6 +88,8 @@ const resourceLabel = computed(() => {
   return name.charAt(0).toUpperCase() + name.slice(1)
 })
 
+const actionVerb = computed(() => (props.page === 'CREATE' ? 'create' : 'update'))
+
 const headerTitle = computed(() =>
   props.page === 'CREATE' ? `Create ${resourceLabel.value}` : `Edit ${resourceLabel.value}`,
 )
@@ -118,6 +122,12 @@ function handleSubmit() {
 </script>
 
 <style>
+.vue-resource.prince-error {
+  color: var(--prince-color-danger, #dc3545);
+  font-size: var(--prince-font-size-sm, 0.8125rem);
+  padding: 8px 0;
+}
+
 .vue-resource.prince-form-body {
   display: flex;
   flex-direction: column;
