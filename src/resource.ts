@@ -84,11 +84,16 @@ export function hasActionPermission(permission?: string): boolean {
   return perms ? perms.includes(permission) : true
 }
 
+export type SuccessValidationResult = {
+  success: true
+}
+export type FailValidationResult = {
+  success: false
+  error: { issues: Array<{ path: PropertyKey[]; message: string }> }
+}
+
 export type ValidationSchema = {
-  safeParse: (data: unknown) => {
-    success: boolean
-    error?: { issues: Array<{ path: PropertyKey[]; message: string }> }
-  }
+  safeParse: (data: unknown) => SuccessValidationResult | FailValidationResult
 }
 
 export type ResourceTab = {
