@@ -172,11 +172,11 @@ export function defineResource<
     }
     title?: (item: { [K in keyof F]: FieldTypeToTs<F[K]> }) => unknown
   },
-): ResourceSpec & {
+): Omit<ResourceSpec, 'fields' | 'title'> & {
   fields?: { [K in keyof F]: ResourceFieldDef & { type: F[K] } }
   title?: (item: Record<string, unknown>) => string
 } {
-  return spec as ResourceSpec & {
+  return spec as Omit<ResourceSpec, 'fields' | 'title'> & {
     fields?: { [K in keyof F]: ResourceFieldDef & { type: F[K] } }
     title?: (item: Record<string, unknown>) => string
   }
