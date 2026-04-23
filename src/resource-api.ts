@@ -93,7 +93,7 @@ export function createResourceApi<const S extends ResourceSpec>(
       await fetch(`${getConfig().baseUrl}${spec.endpoints.api}`, {
         method: 'PATCH',
         headers,
-        body: JSON.stringify(data),
+        body: JSON.stringify({ data }),
       })
     },
 
@@ -101,7 +101,7 @@ export function createResourceApi<const S extends ResourceSpec>(
       await fetch(`${getConfig().baseUrl}${spec.endpoints.api}`, {
         method: 'DELETE',
         headers,
-        body: JSON.stringify(ids),
+        body: JSON.stringify({ data: ids }),
       })
     },
   }
