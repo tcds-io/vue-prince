@@ -21,7 +21,7 @@
       </template>
     </ResourceDetailView>
 
-    <ResourceDetailTabs :tabs="tabs" :parent-id="id" :resource="item ?? {}" />
+    <ResourceDetailTabs :tabs="tabs" :resource-id="id" :resource="item ?? {}" />
   </template>
 </template>
 

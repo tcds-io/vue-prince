@@ -30,6 +30,7 @@ export default tseslint.config(
     files: ['tests/**'],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': ['error', { varsIgnorePattern: '^_' }],
       'vue/one-component-per-file': 'off',
       'vue/require-prop-types': 'off',
     },
