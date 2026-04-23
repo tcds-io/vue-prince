@@ -4,11 +4,14 @@ import { getConfig } from './config'
 
 export type ResourceApi<Model extends object> = {
   schema(): Promise<ResourceSchemaField[]>
-  list(params?: Record<string, string>): Promise<ResourceListResponse<Model>>
+  list(params?: Record<string, string | number | boolean>): Promise<ResourceListResponse<Model>>
   get(id: ResourceId): Promise<ResourceResponse<Model>>
   create(data: Partial<Model>): Promise<ResourceResponse<Model>>
   update(id: ResourceId, data: Partial<Model>): Promise<ResourceResponse<Model> | null>
   remove(id: ResourceId): Promise<void>
+  batchCreate(data: Partial<Model>[]): Promise<ResourceResponse<Model>[]>
+  batchUpdate(data: (Partial<Model> & { id: ResourceId })[]): Promise<void>
+  batchDelete(ids: ResourceId[]): Promise<void>
 }
 
 export function createResourceApi<const S extends ResourceSpec>(
@@ -31,7 +34,7 @@ export function createResourceApi<const S extends ResourceSpec>(
       const url = new URL(spec.endpoints.api, getConfig().baseUrl)
 
       if (params) {
-        Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v))
+        Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, String(v)))
       }
 
       const response = await fetch(url, { headers })
@@ -72,6 +75,33 @@ export function createResourceApi<const S extends ResourceSpec>(
       await fetch(`${getConfig().baseUrl}${spec.endpoints.api}/${id}`, {
         method: 'DELETE',
         headers,
+      })
+    },
+
+    async batchCreate(data) {
+      const response = await fetch(`${getConfig().baseUrl}${spec.endpoints.api}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ data }),
+      })
+      const body = await response.json()
+      // Support { data: [...] } envelope or bare array
+      return (Array.isArray(body) ? body : body.data) as ResourceResponse<Model>[]
+    },
+
+    async batchUpdate(data) {
+      await fetch(`${getConfig().baseUrl}${spec.endpoints.api}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify(data),
+      })
+    },
+
+    async batchDelete(ids) {
+      await fetch(`${getConfig().baseUrl}${spec.endpoints.api}`, {
+        method: 'DELETE',
+        headers,
+        body: JSON.stringify(ids),
       })
     },
   }

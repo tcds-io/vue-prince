@@ -1,12 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { createResourceRoutes, configureVuePrince } from '../src'
-import type { ResourcePageStore, ResourceSpec } from '../src'
+import type { ResourceSpec } from '../src'
 
 const spec: ResourceSpec = {
   name: 'company',
   endpoints: { api: '/api/companies', route: '/companies' },
 }
-const useStore = () => ({}) as ResourcePageStore
 
 describe('createResourceRoutes', () => {
   beforeEach(() => {
@@ -14,11 +13,11 @@ describe('createResourceRoutes', () => {
   })
 
   it('generates exactly 5 routes', () => {
-    expect(createResourceRoutes(spec, useStore)).toHaveLength(5)
+    expect(createResourceRoutes(spec)).toHaveLength(5)
   })
 
   it('derives paths from endpoints.route', () => {
-    const routes = createResourceRoutes(spec, useStore)
+    const routes = createResourceRoutes(spec)
     const paths = routes.map((r) => r.path)
     expect(paths[0]).toBe('companies')
     expect(paths[1]).toBe('companies/:id')
@@ -28,7 +27,7 @@ describe('createResourceRoutes', () => {
   })
 
   it('assigns named routes using the segment', () => {
-    const routes = createResourceRoutes(spec, useStore)
+    const routes = createResourceRoutes(spec)
     expect(routes[0].name).toBe('companies-list')
     expect(routes[1].name).toBe('companies-detail')
     expect(routes[2].name).toBe('companies-create')
@@ -36,18 +35,13 @@ describe('createResourceRoutes', () => {
     expect(routes[4].name).toBe('companies-delete-confirm')
   })
 
-  it('attaches useStore to every route meta', () => {
-    const routes = createResourceRoutes(spec, useStore)
-    routes.forEach((route) => expect(route.meta?.useStore).toBe(useStore))
-  })
-
   it('attaches spec to every route meta', () => {
-    const routes = createResourceRoutes(spec, useStore)
+    const routes = createResourceRoutes(spec)
     routes.forEach((route) => expect(route.meta?.spec).toBe(spec))
   })
 
   it('does not attach beforeEnter guards (permission is handled by wrapper component)', () => {
-    const routes = createResourceRoutes(spec, useStore)
+    const routes = createResourceRoutes(spec)
     routes.forEach((route) => expect(route.beforeEnter).toBeUndefined())
   })
 
@@ -56,7 +50,7 @@ describe('createResourceRoutes', () => {
       name: 'product',
       endpoints: { api: '/api/v2/backoffice/products', route: '/admin/products' },
     }
-    const routes = createResourceRoutes(nested, useStore)
+    const routes = createResourceRoutes(nested)
     expect(routes[0].path).toBe('admin/products')
     expect(routes[1].path).toBe('admin/products/:id')
     expect(routes[2].path).toBe('admin/products/create')
@@ -72,6 +66,6 @@ describe('createResourceRoutes', () => {
       permissions: { read: 'r', create: 'c', update: 'u', delete: 'd' },
     }
     configureVuePrince({ baseUrl: '', userPermissions: () => [] })
-    expect(createResourceRoutes(restricted, useStore)).toHaveLength(5)
+    expect(createResourceRoutes(restricted)).toHaveLength(5)
   })
 })

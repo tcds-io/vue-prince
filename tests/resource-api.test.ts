@@ -143,4 +143,60 @@ describe('createResourceApi', () => {
       expect(options.headers['Content-Type']).toBe('application/json')
     })
   })
+
+  describe('batchCreate()', () => {
+    it('POSTs to the base URL (no /{id}) with { data: [...] } body', async () => {
+      global.fetch = mockFetch({
+        data: [
+          { id: 1, name: 'Acme' },
+          { id: 2, name: 'Beta' },
+        ],
+      })
+      await createResourceApi(spec).batchCreate([{ name: 'Acme' }, { name: 'Beta' }] as any)
+      const [url, options] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0]
+      expect(url).toBe('https://api.example.com/api/companies')
+      expect(options.method).toBe('POST')
+      expect(JSON.parse(options.body)).toEqual({ data: [{ name: 'Acme' }, { name: 'Beta' }] })
+    })
+
+    it('returns array from { data: [...] } enveloped response', async () => {
+      const items = [{ data: { id: 1, name: 'Acme' } }, { data: { id: 2, name: 'Beta' } }]
+      global.fetch = mockFetch({ data: items })
+      const result = await createResourceApi(spec).batchCreate([{ name: 'Acme' }] as any)
+      expect(result).toEqual(items)
+    })
+
+    it('returns bare array response as-is', async () => {
+      const items = [{ data: { id: 1, name: 'Acme' } }]
+      global.fetch = mockFetch(items)
+      const result = await createResourceApi(spec).batchCreate([{ name: 'Acme' }] as any)
+      expect(result).toEqual(items)
+    })
+  })
+
+  describe('batchUpdate()', () => {
+    it('PATCHes the base URL with the array body directly', async () => {
+      global.fetch = vi.fn().mockResolvedValue({ status: 204 })
+      const payload = [
+        { id: 1, name: 'Updated' },
+        { id: 2, name: 'Also Updated' },
+      ]
+      await createResourceApi(spec).batchUpdate(payload as any)
+      const [url, options] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0]
+      expect(url).toBe('https://api.example.com/api/companies')
+      expect(options.method).toBe('PATCH')
+      expect(JSON.parse(options.body)).toEqual(payload)
+    })
+  })
+
+  describe('batchDelete()', () => {
+    it('DELETEs the base URL with IDs as JSON body (no /{id} in URL)', async () => {
+      global.fetch = vi.fn().mockResolvedValue({ status: 204 })
+      await createResourceApi(spec).batchDelete([1, 2, 3])
+      const [url, options] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0]
+      expect(url).toBe('https://api.example.com/api/companies')
+      expect(options.method).toBe('DELETE')
+      expect(JSON.parse(options.body)).toEqual([1, 2, 3])
+    })
+  })
 })

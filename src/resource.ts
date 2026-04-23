@@ -134,13 +134,17 @@ type ListVisibleKeys<F extends Record<string, ResourceFieldDef>> = {
 
 export type InferResourceModel<S extends ResourceSpec> = [keyof DefinedFields<S>] extends [never]
   ? Record<string, unknown>
-  : { [K in keyof DefinedFields<S>]: FieldTypeToTs<DefinedFields<S>[K]['type']> }
+  : string extends keyof DefinedFields<S> // generic string index = no specific fields known
+    ? Record<string, unknown>
+    : { [K in keyof DefinedFields<S>]: FieldTypeToTs<DefinedFields<S>[K]['type']> }
 
 export type InferResourceListModel<S extends ResourceSpec> = [keyof DefinedFields<S>] extends [
   never,
 ]
   ? Record<string, unknown>
-  : { [K in ListVisibleKeys<DefinedFields<S>>]: FieldTypeToTs<DefinedFields<S>[K]['type']> }
+  : string extends keyof DefinedFields<S>
+    ? Record<string, unknown>
+    : { [K in ListVisibleKeys<DefinedFields<S>>]: FieldTypeToTs<DefinedFields<S>[K]['type']> }
 
 // Alias for the field type discriminant — either a primitive kind or a lazy resource reference.
 type AnyTypeRef = SpecFieldType | (() => ResourceSpec)

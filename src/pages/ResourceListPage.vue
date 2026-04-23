@@ -74,6 +74,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { createResourceController } from '../resource-controller'
 import type { ResourceListItem, ResourceSchemaField } from '../api'
 import type { ResourceListPageProps } from '../page-props'
 import type { ResourceFieldDef } from '../resource'
@@ -88,7 +89,7 @@ import { useResourceLabels, useResourceLabelMap, useResourceSchema } from './use
 
 const route = useRoute()
 const router = useRouter()
-const store = route.meta.useStore!()
+const store = createResourceController(route.meta.spec!).useStore()
 
 const segment = computed(() => route.meta.spec?.endpoints.route.split('/').pop())
 function pluralize(word: string): string {

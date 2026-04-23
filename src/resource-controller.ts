@@ -39,7 +39,7 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
       }
     }
 
-    async function fetchList(params?: Record<string, string>) {
+    async function fetchList(params?: Record<string, string | number | boolean>) {
       loading.value = true
       error.value = null
       try {
@@ -117,6 +117,47 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
       }
     }
 
+    async function batchCreate(data: Partial<Model>[]) {
+      loading.value = true
+      error.value = null
+      try {
+        if (!hasPermission(spec, 'create')) throw new Error('Permission denied: create')
+        const results = await api.batchCreate(data)
+        return results.map((r) => r.data)
+      } catch (e) {
+        error.value = String(e)
+      } finally {
+        loading.value = false
+      }
+    }
+
+    async function batchUpdate(data: (Partial<Model> & { id: ResourceId })[]) {
+      loading.value = true
+      error.value = null
+      try {
+        if (!hasPermission(spec, 'update')) throw new Error('Permission denied: update')
+        await api.batchUpdate(data)
+      } catch (e) {
+        error.value = String(e)
+      } finally {
+        loading.value = false
+      }
+    }
+
+    async function batchDelete(ids: ResourceId[]) {
+      loading.value = true
+      error.value = null
+      try {
+        if (!hasPermission(spec, 'delete')) throw new Error('Permission denied: delete')
+        await api.batchDelete(ids)
+        list.value = list.value.filter((r) => !('id' in r) || !ids.includes(r.id as ResourceId))
+      } catch (e) {
+        error.value = String(e)
+      } finally {
+        loading.value = false
+      }
+    }
+
     return {
       list,
       listMeta,
@@ -131,6 +172,9 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
       create,
       update,
       remove,
+      batchCreate,
+      batchUpdate,
+      batchDelete,
     }
   })
 
