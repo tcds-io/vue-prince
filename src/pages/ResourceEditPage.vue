@@ -20,6 +20,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { createResourceController } from '../resource-controller'
 import type { ResourceSchemaField } from '../api'
 import type { ResourceEditPageProps } from '../page-props'
 import ResourceFormView from '../ui/ResourceFormView.vue'
@@ -27,7 +28,7 @@ import { useResourceSchema, useResourceLabels } from './use-resource-meta'
 
 const route = useRoute()
 const router = useRouter()
-const store = route.meta.useStore!()
+const store = createResourceController(route.meta.spec!).useStore()
 
 const id = route.params.id as string
 const segment = computed(() => route.meta.spec?.endpoints.route.split('/').pop())

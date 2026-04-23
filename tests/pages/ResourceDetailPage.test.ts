@@ -6,7 +6,9 @@ import ResourceDetailView from '../../src/ui/ResourceDetailView.vue'
 import { configureVuePrince } from '../../src/config'
 
 vi.mock('vue-router', () => ({ useRoute: vi.fn(), useRouter: vi.fn() }))
+vi.mock('../../src/resource-controller', () => ({ createResourceController: vi.fn() }))
 import { useRoute, useRouter } from 'vue-router'
+import { createResourceController } from '../../src/resource-controller'
 
 function makeStore(overrides: Record<string, unknown> = {}) {
   return {
@@ -44,11 +46,12 @@ describe('ResourceDetailPage', () => {
     store = makeStore()
     mockPush = vi.fn()
     vi.mocked(useRouter).mockReturnValue({ push: mockPush } as any)
+    vi.mocked(createResourceController).mockReturnValue({ useStore: () => store } as any)
   })
 
   function mountPage(spec: any = BASE_SPEC, id = '1') {
     vi.mocked(useRoute).mockReturnValue({
-      meta: { useStore: () => store, spec },
+      meta: { spec },
       params: { id },
       query: {},
     } as any)

@@ -175,6 +175,91 @@ describe('createResourceController', () => {
     })
   })
 
+  describe('batchCreate()', () => {
+    it('calls api.batchCreate and returns the created items', async () => {
+      const items = [
+        { id: 1, name: 'Acme' },
+        { id: 2, name: 'Beta' },
+      ]
+      global.fetch = mockFetch({ data: items.map((data) => ({ data })) })
+      const { useStore } = createResourceController(makeSpec())
+      const store = useStore()
+      const result = await store.batchCreate([{ name: 'Acme' }, { name: 'Beta' }])
+      expect(result).toEqual(items)
+      expect(store.error).toBeNull()
+    })
+
+    it('sets error when create permission is missing', async () => {
+      const restrictedSpec = {
+        name: 'company',
+        endpoints: { api: '/api/restricted-batch', route: '/restricted-batch' },
+        permissions: { read: 'r', create: 'c', update: 'u', delete: 'd' },
+      }
+      configureVuePrince({ baseUrl: 'https://api.example.com', userPermissions: () => [] })
+      const { useStore } = createResourceController(restrictedSpec)
+      const store = useStore()
+      await store.batchCreate([{ name: 'Acme' }])
+      expect(store.error).toContain('Permission denied: create')
+    })
+  })
+
+  describe('batchUpdate()', () => {
+    it('calls api.batchUpdate and clears error on success', async () => {
+      global.fetch = vi.fn().mockResolvedValue({ status: 204 })
+      const { useStore } = createResourceController(makeSpec())
+      const store = useStore()
+      await store.batchUpdate([{ id: 1, name: 'Updated' }])
+      expect(store.error).toBeNull()
+      expect(store.loading).toBe(false)
+    })
+
+    it('sets error when update permission is missing', async () => {
+      const restrictedSpec = {
+        name: 'company',
+        endpoints: { api: '/api/restricted-batch2', route: '/restricted-batch2' },
+        permissions: { read: 'r', create: 'c', update: 'u', delete: 'd' },
+      }
+      configureVuePrince({ baseUrl: 'https://api.example.com', userPermissions: () => [] })
+      const { useStore } = createResourceController(restrictedSpec)
+      const store = useStore()
+      await store.batchUpdate([{ id: 1, name: 'Updated' }])
+      expect(store.error).toContain('Permission denied: update')
+    })
+  })
+
+  describe('batchDelete()', () => {
+    it('removes matching items from the list', async () => {
+      const data = [
+        { id: 1, name: 'Acme', _resource: 'company' },
+        { id: 2, name: 'Beta', _resource: 'company' },
+        { id: 3, name: 'Gamma', _resource: 'company' },
+      ]
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce({ status: 200, json: () => Promise.resolve({ data, meta: {} }) })
+        .mockResolvedValueOnce({ status: 204 })
+      const { useStore } = createResourceController(makeSpec())
+      const store = useStore()
+      await store.fetchList()
+      await store.batchDelete([1, 3])
+      expect(store.list).toHaveLength(1)
+      expect((store.list[0] as any).id).toBe(2)
+    })
+
+    it('sets error when delete permission is missing', async () => {
+      const restrictedSpec = {
+        name: 'company',
+        endpoints: { api: '/api/restricted-batch3', route: '/restricted-batch3' },
+        permissions: { read: 'r', create: 'c', update: 'u', delete: 'd' },
+      }
+      configureVuePrince({ baseUrl: 'https://api.example.com', userPermissions: () => [] })
+      const { useStore } = createResourceController(restrictedSpec)
+      const store = useStore()
+      await store.batchDelete([1, 2])
+      expect(store.error).toContain('Permission denied: delete')
+    })
+  })
+
   describe('loading state', () => {
     it('is true while a fetch is in-flight and false after', async () => {
       let resolve: (v: any) => void

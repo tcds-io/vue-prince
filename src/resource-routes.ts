@@ -19,16 +19,18 @@ export interface ResourcePageStore {
   loading: boolean
   error: string | null
   fetchSchema(): Promise<void>
-  fetchList(params?: Record<string, string>): Promise<void>
+  fetchList(params?: Record<string, string | number | boolean>): Promise<void>
   fetchItem(id: ResourceId): Promise<void>
   create(data: Record<string, unknown>): Promise<unknown>
   update(id: ResourceId, data: Record<string, unknown>): Promise<unknown>
   remove(id: ResourceId): Promise<void>
+  batchCreate(data: Partial<Record<string, unknown>>[]): Promise<unknown[] | undefined>
+  batchUpdate(data: (Partial<Record<string, unknown>> & { id: ResourceId })[]): Promise<void>
+  batchDelete(ids: ResourceId[]): Promise<void>
 }
 
 declare module 'vue-router' {
   interface RouteMeta {
-    useStore?: () => ResourcePageStore
     spec?: ResourceSpec
   }
 }
@@ -41,10 +43,7 @@ function withPermission(inner: Component, permission?: string): Component {
   })
 }
 
-export function createResourceRoutes(
-  spec: ResourceSpec,
-  useStore: () => ResourcePageStore,
-): RouteRecordRaw[] {
+export function createResourceRoutes(spec: ResourceSpec): RouteRecordRaw[] {
   const basePath = spec.endpoints.route.replace(/^\//, '')
   const segment = basePath.split('/').pop()!
 
@@ -53,31 +52,31 @@ export function createResourceRoutes(
       path: basePath,
       name: `${segment}-list`,
       component: withPermission(ResourceListPage, spec.permissions?.read),
-      meta: { useStore, spec },
+      meta: { spec },
     },
     {
       path: `${basePath}/:id`,
       name: `${segment}-detail`,
       component: withPermission(ResourceDetailPage, spec.permissions?.read),
-      meta: { useStore, spec },
+      meta: { spec },
     },
     {
       path: `${basePath}/create`,
       name: `${segment}-create`,
       component: withPermission(ResourceCreatePage, spec.permissions?.create),
-      meta: { useStore, spec },
+      meta: { spec },
     },
     {
       path: `${basePath}/:id/edit`,
       name: `${segment}-edit`,
       component: withPermission(ResourceEditPage, spec.permissions?.update),
-      meta: { useStore, spec },
+      meta: { spec },
     },
     {
       path: `${basePath}/:id/delete/confirm`,
       name: `${segment}-delete-confirm`,
       component: withPermission(ResourceDeletePage, spec.permissions?.delete),
-      meta: { useStore, spec },
+      meta: { spec },
     },
   ]
 }

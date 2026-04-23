@@ -6,7 +6,9 @@ import ResourceFormView from '../../src/ui/ResourceFormView.vue'
 import { configureVuePrince } from '../../src/config'
 
 vi.mock('vue-router', () => ({ useRoute: vi.fn(), useRouter: vi.fn() }))
+vi.mock('../../src/resource-controller', () => ({ createResourceController: vi.fn() }))
 import { useRoute, useRouter } from 'vue-router'
+import { createResourceController } from '../../src/resource-controller'
 
 function makeStore(overrides: Record<string, unknown> = {}) {
   return {
@@ -44,11 +46,12 @@ describe('ResourceCreatePage', () => {
     store = makeStore()
     mockPush = vi.fn()
     vi.mocked(useRouter).mockReturnValue({ push: mockPush } as any)
+    vi.mocked(createResourceController).mockReturnValue({ useStore: () => store } as any)
   })
 
   function mountPage(spec: any = BASE_SPEC) {
     vi.mocked(useRoute).mockReturnValue({
-      meta: { useStore: () => store, spec },
+      meta: { spec },
       params: {},
       query: {},
     } as any)
