@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
-import type { ResourceSpec } from '../src'
+import { describe, expect, expectTypeOf, it } from 'vitest'
+import type { InferResourceListModel, InferResourceModel, ResourceSpec } from '../src'
 import { defineResource, isResourceRef } from '../src'
 
 const endpoints = { api: '/api/users', route: '/users' }
@@ -141,5 +141,107 @@ describe('defineResource', () => {
     const typeRef = result.fields?.owner_id.type
     expect(typeof typeRef).toBe('function')
     expect((typeRef as () => typeof userSpec)()).toBe(userSpec)
+  })
+})
+
+describe('InferResourceModel', () => {
+  const _userSpec = defineResource({
+    name: 'user',
+    endpoints: { api: '/api/users', route: '/users' },
+    fields: {
+      id: { type: 'integer' as const },
+      name: { type: 'string' as const },
+      bio: { type: 'text' as const },
+      score: { type: 'number' as const },
+      active: { type: 'boolean' as const },
+      joined_at: { type: 'datetime' as const },
+      role: { type: 'enum' as const },
+    },
+  })
+
+  it('infers integer fields as number', () => {
+    type M = InferResourceModel<typeof _userSpec>
+    expectTypeOf<M['id']>().toEqualTypeOf<number>()
+  })
+
+  it('infers string fields as string', () => {
+    type M = InferResourceModel<typeof _userSpec>
+    expectTypeOf<M['name']>().toEqualTypeOf<string>()
+  })
+
+  it('infers text fields as string', () => {
+    type M = InferResourceModel<typeof _userSpec>
+    expectTypeOf<M['bio']>().toEqualTypeOf<string>()
+  })
+
+  it('infers number fields as number', () => {
+    type M = InferResourceModel<typeof _userSpec>
+    expectTypeOf<M['score']>().toEqualTypeOf<number>()
+  })
+
+  it('infers boolean fields as boolean', () => {
+    type M = InferResourceModel<typeof _userSpec>
+    expectTypeOf<M['active']>().toEqualTypeOf<boolean>()
+  })
+
+  it('infers datetime fields as string', () => {
+    type M = InferResourceModel<typeof _userSpec>
+    expectTypeOf<M['joined_at']>().toEqualTypeOf<string>()
+  })
+
+  it('infers enum fields as string', () => {
+    type M = InferResourceModel<typeof _userSpec>
+    expectTypeOf<M['role']>().toEqualTypeOf<string>()
+  })
+
+  it('infers resource-ref fields as number', () => {
+    const _companySpec: ResourceSpec = {
+      name: 'company',
+      endpoints: { api: '/api/companies', route: '/companies' },
+    }
+    const _spec = defineResource({
+      name: 'user',
+      endpoints: { api: '/api/users', route: '/users' },
+      fields: { company_id: { type: () => _companySpec } },
+    })
+    type M = InferResourceModel<typeof _spec>
+    expectTypeOf<M['company_id']>().toEqualTypeOf<number>()
+  })
+
+  it('falls back to Record<string, unknown> when no fields defined', () => {
+    const _spec = defineResource({
+      name: 'user',
+      endpoints: { api: '/api/users', route: '/users' },
+    })
+    type M = InferResourceModel<typeof _spec>
+    expectTypeOf<M>().toEqualTypeOf<Record<string, unknown>>()
+  })
+})
+
+describe('InferResourceListModel', () => {
+  const _spec = defineResource({
+    name: 'user',
+    endpoints: { api: '/api/users', route: '/users' },
+    fields: {
+      id: { type: 'integer' as const },
+      name: { type: 'string' as const },
+      score: { type: 'number' as const },
+    },
+  })
+
+  it('infers field types', () => {
+    type M = InferResourceListModel<typeof _spec>
+    expectTypeOf<M['id']>().toEqualTypeOf<number>()
+    expectTypeOf<M['name']>().toEqualTypeOf<string>()
+    expectTypeOf<M['score']>().toEqualTypeOf<number>()
+  })
+
+  it('falls back to Record<string, unknown> when no fields defined', () => {
+    const _noFieldSpec = defineResource({
+      name: 'user',
+      endpoints: { api: '/api/users', route: '/users' },
+    })
+    type M = InferResourceListModel<typeof _noFieldSpec>
+    expectTypeOf<M>().toEqualTypeOf<Record<string, unknown>>()
   })
 })

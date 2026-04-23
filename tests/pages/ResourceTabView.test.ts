@@ -25,7 +25,7 @@ const userSpec = {
 
 const defaultProps = {
   spec: userSpec,
-  parentId: 1,
+  resourceId: 1,
   foreignKey: 'company_id',
   resource: { id: 1, name: 'Acme' },
 }
@@ -38,7 +38,7 @@ beforeEach(() => {
 })
 
 describe('ResourceTabView', () => {
-  it('fetches items on mount using parentId and foreignKey', async () => {
+  it('fetches items on mount using resourceId and foreignKey', async () => {
     const mockList = vi.fn().mockResolvedValue({ data: [], meta: null })
     vi.mocked(createResourceApi).mockReturnValue({ list: mockList } as any)
     mount(ResourceTabView, {
@@ -106,7 +106,7 @@ describe('ResourceTabView', () => {
     expect(wrapper.find('.prince-pagination').exists()).toBe(true)
   })
 
-  it('refetches when parentId prop changes', async () => {
+  it('refetches when resourceId prop changes', async () => {
     const mockList = vi.fn().mockResolvedValue({ data: [], meta: null })
     vi.mocked(createResourceApi).mockReturnValue({ list: mockList } as any)
     const wrapper = mount(ResourceTabView, {
@@ -115,7 +115,7 @@ describe('ResourceTabView', () => {
     })
     await flushPromises()
     mockList.mockClear()
-    await wrapper.setProps({ parentId: 99 })
+    await wrapper.setProps({ resourceId: 99 })
     await flushPromises()
     expect(mockList).toHaveBeenCalledWith({ company_id: '99', page: '1' })
   })

@@ -132,15 +132,15 @@ type ListVisibleKeys<F extends Record<string, ResourceFieldDef>> = {
   [K in keyof F]: F[K]['list'] extends { show: false } ? never : K
 }[keyof F]
 
-export type InferResourceModel<S extends ResourceSpec> =
-  S['fields'] extends Record<string, ResourceFieldDef>
-    ? { [K in keyof DefinedFields<S>]: FieldTypeToTs<DefinedFields<S>[K]['type']> }
-    : Record<string, unknown>
+export type InferResourceModel<S extends ResourceSpec> = [keyof DefinedFields<S>] extends [never]
+  ? Record<string, unknown>
+  : { [K in keyof DefinedFields<S>]: FieldTypeToTs<DefinedFields<S>[K]['type']> }
 
-export type InferResourceListModel<S extends ResourceSpec> =
-  S['fields'] extends Record<string, ResourceFieldDef>
-    ? { [K in ListVisibleKeys<DefinedFields<S>>]: FieldTypeToTs<DefinedFields<S>[K]['type']> }
-    : Record<string, unknown>
+export type InferResourceListModel<S extends ResourceSpec> = [keyof DefinedFields<S>] extends [
+  never,
+]
+  ? Record<string, unknown>
+  : { [K in ListVisibleKeys<DefinedFields<S>>]: FieldTypeToTs<DefinedFields<S>[K]['type']> }
 
 // Alias for the field type discriminant — either a primitive kind or a lazy resource reference.
 type AnyTypeRef = SpecFieldType | (() => ResourceSpec)
@@ -173,11 +173,11 @@ export function defineResource<
     title?: (item: { [K in keyof F]: FieldTypeToTs<F[K]> }) => unknown
   },
 ): Omit<ResourceSpec, 'fields' | 'title'> & {
-  fields?: { [K in keyof F]: ResourceFieldDef & { type: F[K] } }
+  fields?: { [K in keyof F]: Omit<ResourceFieldDef, 'type'> & { type: F[K] } }
   title?: (item: Record<string, unknown>) => string
 } {
   return spec as Omit<ResourceSpec, 'fields' | 'title'> & {
-    fields?: { [K in keyof F]: ResourceFieldDef & { type: F[K] } }
+    fields?: { [K in keyof F]: Omit<ResourceFieldDef, 'type'> & { type: F[K] } }
     title?: (item: Record<string, unknown>) => string
   }
 }

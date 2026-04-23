@@ -101,7 +101,7 @@ async function fetchItems(parentId: string | number, pg: number) {
 }
 
 watch(
-  () => props.parentId,
+  () => props.resourceId,
   (id) => {
     if (id != null) {
       page.value = 1
@@ -112,7 +112,7 @@ watch(
 )
 
 function goToPage(p: number) {
-  if (props.parentId != null) fetchItems(props.parentId, p)
+  if (props.resourceId != null) fetchItems(props.resourceId, p)
 }
 
 function openInNewTab(row: { id: string | number }) {
@@ -131,7 +131,7 @@ function createNew() {
   const segment = props.spec.endpoints.route.split('/').pop()
   router.push({
     name: `${segment}-create`,
-    query: props.parentId != null ? { [props.foreignKey]: String(props.parentId) } : {},
+    query: props.resourceId != null ? { [props.foreignKey]: String(props.resourceId) } : {},
   })
 }
 </script>

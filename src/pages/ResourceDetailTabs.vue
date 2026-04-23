@@ -9,7 +9,7 @@
       >
         <component
           :is="tab.component"
-          :parent-id="parentId"
+          :resource-id="resourceId"
           :foreign-key="tab.foreignKey"
           :resource="resource"
         />
@@ -27,7 +27,7 @@ import { getConfig } from '../config'
 
 defineProps<{
   tabs: ResolvedTab[]
-  parentId: ResourceId | null | undefined
+  resourceId: ResourceId | null | undefined
   resource: Record<string, unknown>
 }>()
 

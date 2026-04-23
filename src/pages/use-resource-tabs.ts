@@ -6,7 +6,7 @@ import ResourceListTabContent from './ResourceListTabContent.vue'
 import ResourceTabViewComponent from './ResourceTabView.vue'
 
 export type TabComponentProps<T = Record<string, unknown>> = {
-  parentId: ResourceId | null | undefined
+  resourceId: ResourceId | null | undefined
   foreignKey: string
   resource: T
 }
@@ -30,7 +30,7 @@ function makeListComponent(spec: ResourceSpec, ContentComponent: Component): Com
   return defineComponent({
     name: `${spec.name}ListTab`,
     props: {
-      parentId: { type: [String, Number], default: null },
+      resourceId: { type: [String, Number], default: null },
       foreignKey: { type: String, required: true },
       resource: { type: Object, default: () => ({}) },
     },
