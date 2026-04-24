@@ -59,13 +59,6 @@ export function resolveFieldType(type: ResourceFieldDef['type']): SpecFieldType 
   return typeof type === 'function' ? type() : type
 }
 
-export type ResourcePermissions = {
-  create?: string
-  read?: string
-  update?: string
-  delete?: string
-}
-
 export type ResourceListAction = {
   label: string
   onClick: () => void
@@ -115,7 +108,6 @@ export type ResourceSpec<T = Record<string, unknown>> = {
   name: string
   endpoints: { api: string; route: string }
   fields?: Record<string, ResourceFieldDef>
-  permissions?: ResourcePermissions
   title?: (item: T) => string
   components?: ResourcePageComponents
   tabs?: readonly ResourceTab[]
@@ -149,8 +141,11 @@ export type InferResourceListModel<S extends ResourceSpec> = [keyof DefinedField
 // Alias for the field type discriminant — either a primitive kind or a lazy resource reference.
 type AnyTypeRef = SpecFieldType | (() => ResourceSpec)
 
-export function hasPermission(spec: ResourceSpec, action: keyof ResourcePermissions): boolean {
-  const required = spec.permissions?.[action]
+export function hasPermission(
+  schemaPermissions: Record<string, string>,
+  action: string,
+): boolean {
+  const required = schemaPermissions[action]
   if (!required) return true
   const perms = getConfig().userPermissions?.()
   return perms ? perms.includes(required) : true

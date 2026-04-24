@@ -18,6 +18,8 @@ function makeStore(overrides: Record<string, unknown> = {}) {
     item: null as Record<string, unknown> | null,
     itemMeta: null,
     schemaFields: [] as unknown[],
+    schemaPermissions: {} as Record<string, string>,
+    schemaLoaded: true,
     loading: false,
     error: null as string | null,
     fetchSchema: vi.fn().mockResolvedValue(undefined),

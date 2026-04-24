@@ -3,6 +3,7 @@ import { mount, flushPromises } from '@vue/test-utils'
 import ResourceTabView from '../../src/pages/ResourceTabView.vue'
 
 vi.mock('../../src/resource-api', () => ({ createResourceApi: vi.fn() }))
+vi.mock('../../src/resource-controller', () => ({ createResourceController: vi.fn() }))
 vi.mock('vue-router', () => ({
   useRouter: () => ({
     resolve: (location: { name: string; params: { id: string | number } }) => ({
@@ -12,6 +13,7 @@ vi.mock('vue-router', () => ({
 }))
 
 import { createResourceApi } from '../../src/resource-api'
+import { createResourceController } from '../../src/resource-controller'
 
 const userSpec = {
   name: 'user',
@@ -34,6 +36,14 @@ beforeEach(() => {
   vi.mocked(createResourceApi).mockReset()
   vi.mocked(createResourceApi).mockReturnValue({
     list: vi.fn().mockResolvedValue({ data: [], meta: null }),
+  } as any)
+  vi.mocked(createResourceController).mockReturnValue({
+    useStore: () => ({
+      schemaPermissions: {},
+      schemaLoaded: true,
+      loading: false,
+      fetchSchema: vi.fn().mockResolvedValue(undefined),
+    }),
   } as any)
 })
 

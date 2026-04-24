@@ -81,8 +81,8 @@ function confirmDelete() {
   router.push({ name: `${segment.value}-delete-confirm`, params: { id } })
 }
 
-const canEdit = computed(() => !route.meta.spec || hasPermission(route.meta.spec, 'update'))
-const canDelete = computed(() => !route.meta.spec || hasPermission(route.meta.spec, 'delete'))
+const canEdit = computed(() => hasPermission(store.schemaPermissions, 'update'))
+const canDelete = computed(() => hasPermission(store.schemaPermissions, 'delete'))
 
 const dropdownComponent = computed(() => getConfig().layout?.dropdown ?? PrinceDropdown)
 const resourceActions = computed(() => {

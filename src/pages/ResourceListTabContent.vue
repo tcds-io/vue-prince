@@ -50,6 +50,7 @@ import type { ResourceListItem, ResourceListMetadata, ResourceSchemaField } from
 import type { ResourceSpec } from '../resource'
 import { hasPermission, isResourceRef, resolveFieldType } from '../resource'
 import { createResourceApi } from '../resource-api'
+import { createResourceController } from '../resource-controller'
 import ResourceListView from '../ui/ResourceListView.vue'
 import PrinceButton from '../ui/PrinceButton.vue'
 import type { TabComponentProps } from './use-resource-tabs'
@@ -57,6 +58,7 @@ import type { TabComponentProps } from './use-resource-tabs'
 const props = defineProps<TabComponentProps & { spec: ResourceSpec }>()
 
 const router = useRouter()
+const specStore = computed(() => createResourceController(props.spec).useStore())
 
 const items = ref<ResourceListItem<Record<string, unknown>>[]>([])
 const loading = ref(false)
@@ -103,6 +105,7 @@ async function fetchItems(parentId: string | number, pg: number) {
 watch(
   () => props.resourceId,
   (id) => {
+    specStore.value.fetchSchema()
     if (id != null) {
       page.value = 1
       fetchItems(id, 1)
@@ -120,7 +123,7 @@ function navigate(row: { id: string | number }) {
   router.push({ name: `${segment}-detail`, params: { id: row.id } })
 }
 
-const canCreate = computed(() => hasPermission(props.spec, 'create'))
+const canCreate = computed(() => hasPermission(specStore.value.schemaPermissions, 'create'))
 const resourceLabel = computed(() => {
   const n = props.spec.name
   return n.charAt(0).toUpperCase() + n.slice(1)
