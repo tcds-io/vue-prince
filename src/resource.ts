@@ -141,10 +141,7 @@ export type InferResourceListModel<S extends ResourceSpec> = [keyof DefinedField
 // Alias for the field type discriminant — either a primitive kind or a lazy resource reference.
 type AnyTypeRef = SpecFieldType | (() => ResourceSpec)
 
-export function hasPermission(
-  schemaPermissions: Record<string, string>,
-  action: string,
-): boolean {
+export function hasPermission(schemaPermissions: Record<string, string>, action: string): boolean {
   const required = schemaPermissions[action]
   if (!required) return true
   const perms = getConfig().userPermissions?.()

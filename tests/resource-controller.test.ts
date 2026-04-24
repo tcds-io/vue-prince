@@ -234,7 +234,10 @@ describe('createResourceController', () => {
 
   describe('createMany()', () => {
     it('calls api.createMany and returns the created items', async () => {
-      const createdItems = [{ id: 1, name: 'Acme' }, { id: 2, name: 'Beta' }]
+      const createdItems = [
+        { id: 1, name: 'Acme' },
+        { id: 2, name: 'Beta' },
+      ]
       global.fetch = mockFetchWithSchema({ data: createdItems.map((d) => ({ data: d })) })
       const { useStore } = createResourceController(makeSpec())
       const store = useStore()
@@ -246,9 +249,7 @@ describe('createResourceController', () => {
     it('sets error when create permission is missing', async () => {
       global.fetch = mockFetch({ schema: [], permissions: { create: 'c' } })
       configureVuePrince({ baseUrl: 'https://api.example.com', userPermissions: () => [] })
-      const { useStore } = createResourceController(
-        makeSpec('/api/companies-batch-create'),
-      )
+      const { useStore } = createResourceController(makeSpec('/api/companies-batch-create'))
       const store = useStore()
       await store.createMany([{ name: 'Acme' }])
       expect(store.error).toContain('Permission denied: create')
@@ -358,7 +359,10 @@ describe('createResourceController', () => {
     // Permissions now come from the schema response, not the spec.
     // Each test mocks the schema endpoint to return the required permission strings.
     const restrictedApi = '/api/restricted'
-    const restrictedSpec = { name: 'company', endpoints: { api: restrictedApi, route: '/restricted' } }
+    const restrictedSpec = {
+      name: 'company',
+      endpoints: { api: restrictedApi, route: '/restricted' },
+    }
 
     function mockRestrictedSchema() {
       return mockFetch({
