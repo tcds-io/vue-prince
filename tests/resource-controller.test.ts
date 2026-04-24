@@ -25,8 +25,9 @@ describe('createResourceController', () => {
   it('initializes with empty state', () => {
     const { useStore } = createResourceController(makeSpec())
     const store = useStore()
-    expect(store.list).toEqual([])
-    expect(store.listMeta).toBeNull()
+    expect(store.items).toEqual([])
+    expect(store.itemsMeta).toBeNull()
+    expect(store.itemsById).toEqual({})
     expect(store.item).toBeNull()
     expect(store.itemMeta).toBeNull()
     expect(store.schemaFields).toEqual([])
@@ -67,8 +68,8 @@ describe('createResourceController', () => {
     })
   })
 
-  describe('fetchList()', () => {
-    it('populates list and listMeta', async () => {
+  describe('list()', () => {
+    it('populates items and itemsMeta', async () => {
       const data = [{ id: 1, name: 'Acme', _resource: 'company' }]
       const meta = {
         resource: 'company',
@@ -81,16 +82,16 @@ describe('createResourceController', () => {
       global.fetch = mockFetch({ data, meta })
       const { useStore } = createResourceController(makeSpec())
       const store = useStore()
-      await store.fetchList()
-      expect(store.list).toEqual(data)
-      expect(store.listMeta).toEqual(meta)
+      await store.list()
+      expect(store.items).toEqual(data)
+      expect(store.itemsMeta).toEqual(meta)
     })
 
     it('forwards params to the API', async () => {
       global.fetch = mockFetch({ data: [], meta: {} })
       const { useStore } = createResourceController(makeSpec())
       const store = useStore()
-      await store.fetchList({ page: '2', search: 'acme' })
+      await store.list({ page: '2', search: 'acme' })
       const url = String((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][0])
       expect(url).toContain('page=2')
       expect(url).toContain('search=acme')
@@ -100,19 +101,19 @@ describe('createResourceController', () => {
       global.fetch = vi.fn().mockRejectedValue(new Error('Timeout'))
       const { useStore } = createResourceController(makeSpec())
       const store = useStore()
-      await store.fetchList()
+      await store.list()
       expect(store.error).toContain('Timeout')
     })
   })
 
-  describe('fetchItem()', () => {
+  describe('get()', () => {
     it('populates item and itemMeta', async () => {
       const data = { id: 1, name: 'Acme' }
       const meta = { resource: 'company', schema: [], resources: [] }
       global.fetch = mockFetch({ data, meta })
       const { useStore } = createResourceController(makeSpec())
       const store = useStore()
-      await store.fetchItem(1)
+      await store.get(1)
       expect(store.item).toEqual(data)
       expect(store.itemMeta).toEqual(meta)
     })
@@ -150,7 +151,7 @@ describe('createResourceController', () => {
           json: () => Promise.resolve({ data: { id: 1, name: 'Acme' }, meta: {} }),
         })
         .mockResolvedValueOnce({ status: 204, json: () => Promise.resolve(null) })
-      await store.fetchItem(1)
+      await store.get(1)
       await store.update(1, { name: 'Acme Updated' })
       expect((store.item as any)?.name).toBe('Acme Updated')
     })
@@ -168,24 +169,24 @@ describe('createResourceController', () => {
         .mockResolvedValueOnce({ status: 204 })
       const { useStore } = createResourceController(makeSpec())
       const store = useStore()
-      await store.fetchList()
+      await store.list()
       await store.remove(1)
-      expect(store.list).toHaveLength(1)
-      expect((store.list[0] as any).id).toBe(2)
+      expect(store.items).toHaveLength(1)
+      expect((store.items[0] as any).id).toBe(2)
     })
   })
 
-  describe('batchCreate()', () => {
-    it('calls api.batchCreate and returns the created items', async () => {
-      const items = [
+  describe('createMany()', () => {
+    it('calls api.createMany and returns the created items', async () => {
+      const createdItems = [
         { id: 1, name: 'Acme' },
         { id: 2, name: 'Beta' },
       ]
-      global.fetch = mockFetch({ data: items.map((data) => ({ data })) })
+      global.fetch = mockFetch({ data: createdItems.map((data) => ({ data })) })
       const { useStore } = createResourceController(makeSpec())
       const store = useStore()
-      const result = await store.batchCreate([{ name: 'Acme' }, { name: 'Beta' }])
-      expect(result).toEqual(items)
+      const result = await store.createMany([{ name: 'Acme' }, { name: 'Beta' }])
+      expect(result).toEqual(createdItems)
       expect(store.error).toBeNull()
     })
 
@@ -198,17 +199,17 @@ describe('createResourceController', () => {
       configureVuePrince({ baseUrl: 'https://api.example.com', userPermissions: () => [] })
       const { useStore } = createResourceController(restrictedSpec)
       const store = useStore()
-      await store.batchCreate([{ name: 'Acme' }])
+      await store.createMany([{ name: 'Acme' }])
       expect(store.error).toContain('Permission denied: create')
     })
   })
 
-  describe('batchUpdate()', () => {
-    it('calls api.batchUpdate and clears error on success', async () => {
+  describe('updateMany()', () => {
+    it('calls api.updateMany and clears error on success', async () => {
       global.fetch = vi.fn().mockResolvedValue({ status: 204 })
       const { useStore } = createResourceController(makeSpec())
       const store = useStore()
-      await store.batchUpdate([{ id: 1, name: 'Updated' }])
+      await store.updateMany([{ id: 1, name: 'Updated' }])
       expect(store.error).toBeNull()
       expect(store.loading).toBe(false)
     })
@@ -222,12 +223,12 @@ describe('createResourceController', () => {
       configureVuePrince({ baseUrl: 'https://api.example.com', userPermissions: () => [] })
       const { useStore } = createResourceController(restrictedSpec)
       const store = useStore()
-      await store.batchUpdate([{ id: 1, name: 'Updated' }])
+      await store.updateMany([{ id: 1, name: 'Updated' }])
       expect(store.error).toContain('Permission denied: update')
     })
   })
 
-  describe('batchDelete()', () => {
+  describe('deleteMany()', () => {
     it('removes matching items from the list', async () => {
       const data = [
         { id: 1, name: 'Acme', _resource: 'company' },
@@ -240,10 +241,10 @@ describe('createResourceController', () => {
         .mockResolvedValueOnce({ status: 204 })
       const { useStore } = createResourceController(makeSpec())
       const store = useStore()
-      await store.fetchList()
-      await store.batchDelete([1, 3])
-      expect(store.list).toHaveLength(1)
-      expect((store.list[0] as any).id).toBe(2)
+      await store.list()
+      await store.deleteMany([1, 3])
+      expect(store.items).toHaveLength(1)
+      expect((store.items[0] as any).id).toBe(2)
     })
 
     it('sets error when delete permission is missing', async () => {
@@ -255,8 +256,29 @@ describe('createResourceController', () => {
       configureVuePrince({ baseUrl: 'https://api.example.com', userPermissions: () => [] })
       const { useStore } = createResourceController(restrictedSpec)
       const store = useStore()
-      await store.batchDelete([1, 2])
+      await store.deleteMany([1, 2])
       expect(store.error).toContain('Permission denied: delete')
+    })
+  })
+
+  describe('itemsById', () => {
+    it('returns items indexed by id', async () => {
+      const data = [
+        { id: 1, name: 'Acme', _resource: 'company' },
+        { id: 2, name: 'Beta', _resource: 'company' },
+      ]
+      global.fetch = mockFetch({ data, meta: {} })
+      const { useStore } = createResourceController(makeSpec())
+      const store = useStore()
+      await store.list()
+      expect(store.itemsById[1]).toEqual(data[0])
+      expect(store.itemsById[2]).toEqual(data[1])
+    })
+
+    it('is empty when items list is empty', () => {
+      const { useStore } = createResourceController(makeSpec())
+      const store = useStore()
+      expect(store.itemsById).toEqual({})
     })
   })
 
@@ -269,7 +291,7 @@ describe('createResourceController', () => {
       global.fetch = vi.fn().mockReturnValue(pending)
       const { useStore } = createResourceController(makeSpec())
       const store = useStore()
-      const promise = store.fetchList()
+      const promise = store.list()
       expect(store.loading).toBe(true)
       resolve!({ status: 200, json: () => Promise.resolve({ data: [], meta: {} }) })
       await promise
@@ -280,7 +302,7 @@ describe('createResourceController', () => {
       global.fetch = vi.fn().mockRejectedValue(new Error('fail'))
       const { useStore } = createResourceController(makeSpec())
       const store = useStore()
-      await store.fetchList()
+      await store.list()
       expect(store.loading).toBe(false)
     })
   })
@@ -296,17 +318,17 @@ describe('createResourceController', () => {
       configureVuePrince({ baseUrl: 'https://api.example.com', userPermissions: () => [] })
     })
 
-    it('fetchList sets error when read permission is missing', async () => {
+    it('list sets error when read permission is missing', async () => {
       const { useStore } = createResourceController(restrictedSpec)
       const store = useStore()
-      await store.fetchList()
+      await store.list()
       expect(store.error).toContain('Permission denied: read')
     })
 
-    it('fetchItem sets error when read permission is missing', async () => {
+    it('get sets error when read permission is missing', async () => {
       const { useStore } = createResourceController(restrictedSpec)
       const store = useStore()
-      await store.fetchItem(1)
+      await store.get(1)
       expect(store.error).toContain('Permission denied: read')
     })
 
@@ -334,7 +356,7 @@ describe('createResourceController', () => {
     it('resets loading to false after permission denial', async () => {
       const { useStore } = createResourceController(restrictedSpec)
       const store = useStore()
-      await store.fetchList()
+      await store.list()
       expect(store.loading).toBe(false)
     })
 
@@ -343,7 +365,7 @@ describe('createResourceController', () => {
       global.fetch = mockFetch({ data: [], meta: {} })
       const { useStore } = createResourceController(restrictedSpec)
       const store = useStore()
-      await store.fetchList()
+      await store.list()
       expect(store.error).toBeNull()
     })
   })

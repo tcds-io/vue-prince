@@ -10,7 +10,7 @@ export interface ResourceListPageProps<T = Record<string, unknown>> {
   resource: string | undefined
   loading: boolean
   error: string | null
-  listMeta: ResourceListMetadata | null
+  itemsMeta: ResourceListMetadata | null
   page: number
   search: Record<string, string>
   navigateToItem: (item: ResourceListItem<T>) => void

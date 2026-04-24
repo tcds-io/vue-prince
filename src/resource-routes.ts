@@ -11,22 +11,23 @@ import ResourceDeletePage from './pages/ResourceDeletePage.vue'
 import ResourcePermissionWrapper from './pages/ResourcePermissionWrapper.vue'
 
 export interface ResourcePageStore {
-  list: unknown[]
-  listMeta: ResourceListMetadata | null
+  items: unknown[]
+  itemsMeta: ResourceListMetadata | null
+  itemsById: Record<ResourceId, unknown>
   item: unknown
   itemMeta: ResourceMetadata | null
   schemaFields: ResourceSchemaField[]
   loading: boolean
   error: string | null
   fetchSchema(): Promise<void>
-  fetchList(params?: Record<string, string | number | boolean>): Promise<void>
-  fetchItem(id: ResourceId): Promise<void>
+  list(params?: Record<string, string | number | boolean>): Promise<void>
+  get(id: ResourceId): Promise<void>
   create(data: Record<string, unknown>): Promise<unknown>
   update(id: ResourceId, data: Record<string, unknown>): Promise<unknown>
   remove(id: ResourceId): Promise<void>
-  batchCreate(data: Partial<Record<string, unknown>>[]): Promise<unknown[] | undefined>
-  batchUpdate(data: (Partial<Record<string, unknown>> & { id: ResourceId })[]): Promise<void>
-  batchDelete(ids: ResourceId[]): Promise<void>
+  createMany(data: Partial<Record<string, unknown>>[]): Promise<unknown[] | undefined>
+  updateMany(data: (Partial<Record<string, unknown>> & { id: ResourceId })[]): Promise<void>
+  deleteMany(ids: ResourceId[]): Promise<void>
 }
 
 declare module 'vue-router' {

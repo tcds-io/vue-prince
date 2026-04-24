@@ -57,7 +57,7 @@ function cancel() {
 onMounted(() => {
   const specFields = route.meta.spec?.fields
   if (!specFields || Object.keys(specFields).length === 0) store.fetchSchema()
-  store.fetchItem(id)
+  store.get(id)
 })
 
 const customComponent = computed(() => route.meta.spec?.components?.edit)

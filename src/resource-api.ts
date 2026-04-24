@@ -9,9 +9,9 @@ export type ResourceApi<Model extends object> = {
   create(data: Partial<Model>): Promise<ResourceResponse<Model>>
   update(id: ResourceId, data: Partial<Model>): Promise<ResourceResponse<Model> | null>
   remove(id: ResourceId): Promise<void>
-  batchCreate(data: Partial<Model>[]): Promise<ResourceResponse<Model>[]>
-  batchUpdate(data: (Partial<Model> & { id: ResourceId })[]): Promise<void>
-  batchDelete(ids: ResourceId[]): Promise<void>
+  createMany(data: Partial<Model>[]): Promise<ResourceResponse<Model>[]>
+  updateMany(data: (Partial<Model> & { id: ResourceId })[]): Promise<void>
+  deleteMany(ids: ResourceId[]): Promise<void>
 }
 
 export function createResourceApi<const S extends ResourceSpec>(
@@ -78,7 +78,7 @@ export function createResourceApi<const S extends ResourceSpec>(
       })
     },
 
-    async batchCreate(data) {
+    async createMany(data) {
       const response = await fetch(`${getConfig().baseUrl}${spec.endpoints.api}`, {
         method: 'POST',
         headers,
@@ -89,7 +89,7 @@ export function createResourceApi<const S extends ResourceSpec>(
       return (Array.isArray(body) ? body : body.data) as ResourceResponse<Model>[]
     },
 
-    async batchUpdate(data) {
+    async updateMany(data) {
       await fetch(`${getConfig().baseUrl}${spec.endpoints.api}`, {
         method: 'PATCH',
         headers,
@@ -97,7 +97,7 @@ export function createResourceApi<const S extends ResourceSpec>(
       })
     },
 
-    async batchDelete(ids) {
+    async deleteMany(ids) {
       await fetch(`${getConfig().baseUrl}${spec.endpoints.api}`, {
         method: 'DELETE',
         headers,

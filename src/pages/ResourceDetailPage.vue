@@ -66,7 +66,7 @@ const itemTitle = computed(() => {
 onMounted(() => {
   const specFields = route.meta.spec?.fields
   if (!specFields || Object.keys(specFields).length === 0) store.fetchSchema()
-  store.fetchItem(id)
+  store.get(id)
 })
 
 function back() {
