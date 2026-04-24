@@ -17,6 +17,8 @@ export interface ResourcePageStore {
   item: unknown
   itemMeta: ResourceMetadata | null
   schemaFields: ResourceSchemaField[]
+  schemaPermissions: Record<string, string>
+  schemaLoaded: boolean
   loading: boolean
   error: string | null
   fetchSchema(): Promise<void>
@@ -36,10 +38,10 @@ declare module 'vue-router' {
   }
 }
 
-function withPermission(inner: Component, permission?: string): Component {
+function withPermission(inner: Component, action: string): Component {
   return defineComponent({
     render() {
-      return h(ResourcePermissionWrapper, { permission }, { default: () => h(inner) })
+      return h(ResourcePermissionWrapper, { action }, { default: () => h(inner) })
     },
   })
 }
@@ -52,31 +54,31 @@ export function createResourceRoutes(spec: ResourceSpec): RouteRecordRaw[] {
     {
       path: basePath,
       name: `${segment}-list`,
-      component: withPermission(ResourceListPage, spec.permissions?.read),
+      component: withPermission(ResourceListPage, 'read'),
       meta: { spec },
     },
     {
       path: `${basePath}/:id`,
       name: `${segment}-detail`,
-      component: withPermission(ResourceDetailPage, spec.permissions?.read),
+      component: withPermission(ResourceDetailPage, 'read'),
       meta: { spec },
     },
     {
       path: `${basePath}/create`,
       name: `${segment}-create`,
-      component: withPermission(ResourceCreatePage, spec.permissions?.create),
+      component: withPermission(ResourceCreatePage, 'create'),
       meta: { spec },
     },
     {
       path: `${basePath}/:id/edit`,
       name: `${segment}-edit`,
-      component: withPermission(ResourceEditPage, spec.permissions?.update),
+      component: withPermission(ResourceEditPage, 'update'),
       meta: { spec },
     },
     {
       path: `${basePath}/:id/delete/confirm`,
       name: `${segment}-delete-confirm`,
-      component: withPermission(ResourceDeletePage, spec.permissions?.delete),
+      component: withPermission(ResourceDeletePage, 'delete'),
       meta: { spec },
     },
   ]

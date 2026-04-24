@@ -17,18 +17,26 @@ describe('createResourceApi', () => {
   })
 
   describe('schema()', () => {
-    it('GETs /_schema and returns the schema array', async () => {
+    it('GETs /_schema and returns fields and permissions', async () => {
       const schema = [
         { name: 'id', type: 'integer' },
         { name: 'name', type: 'string' },
       ]
-      global.fetch = mockFetch({ schema })
+      const permissions = { read: 'view_companies', create: 'create_company' }
+      global.fetch = mockFetch({ schema, permissions })
       const result = await createResourceApi(spec).schema()
-      expect(result).toEqual(schema)
+      expect(result.fields).toEqual(schema)
+      expect(result.permissions).toEqual(permissions)
       expect(global.fetch).toHaveBeenCalledWith(
         'https://api.example.com/api/companies/_schema',
         expect.objectContaining({ headers: expect.any(Object) }),
       )
+    })
+
+    it('defaults permissions to {} when not present in response', async () => {
+      global.fetch = mockFetch({ schema: [] })
+      const result = await createResourceApi(spec).schema()
+      expect(result.permissions).toEqual({})
     })
   })
 

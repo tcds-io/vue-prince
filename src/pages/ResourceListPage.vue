@@ -174,7 +174,7 @@ function createNew() {
   router.push({ name: `${segment.value}-create` })
 }
 
-const canCreate = computed(() => !route.meta.spec || hasPermission(route.meta.spec, 'create'))
+const canCreate = computed(() => hasPermission(store.schemaPermissions, 'create'))
 
 const dropdownComponent = computed(() => getConfig().layout?.dropdown ?? PrinceDropdown)
 const listActions = computed(() =>

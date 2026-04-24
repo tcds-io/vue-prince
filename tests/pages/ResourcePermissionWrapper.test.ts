@@ -1,27 +1,45 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { ref, nextTick } from 'vue'
+import { ref, reactive, nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { configureVuePrince } from '../../src/config'
 import ResourcePermissionWrapper from '../../src/pages/ResourcePermissionWrapper.vue'
 import ResourcePermissionDeniedPage from '../../src/pages/ResourcePermissionDeniedPage.vue'
 
-vi.mock('vue-router', () => ({ useRouter: vi.fn(() => ({ back: vi.fn() })) }))
+vi.mock('vue-router', () => ({ useRoute: vi.fn(), useRouter: vi.fn(() => ({ back: vi.fn() })) }))
+vi.mock('../../src/resource-controller', () => ({ createResourceController: vi.fn() }))
+import { useRoute } from 'vue-router'
+import { createResourceController } from '../../src/resource-controller'
 
 const SlotContent = { name: 'SlotContent', template: '<div class="content">OK</div>' }
+const SPEC = { name: 'test', endpoints: { api: '/api/test', route: '/test' } }
 
-// Simulates a Pinia store: returns the same reactive array reference each call.
+// Simulates reactive userPermissions that can be mutated at runtime
 function makePermissionsStore(initial: string[]) {
   const all = ref(initial)
   return { all, getAll: () => all.value }
 }
 
+function makeStore(schemaPermissions: Record<string, string> = {}) {
+  return reactive({
+    schemaPermissions,
+    schemaLoaded: true,
+    loading: false,
+    fetchSchema: vi.fn(),
+  })
+}
+
 function mountWrapper(
-  permission: string | undefined,
-  store: ReturnType<typeof makePermissionsStore>,
+  action: string | undefined,
+  permsStore: ReturnType<typeof makePermissionsStore>,
+  schemaPermissions: Record<string, string> = {},
 ) {
-  configureVuePrince({ baseUrl: '', userPermissions: () => store.getAll() })
+  configureVuePrince({ baseUrl: '', userPermissions: () => permsStore.getAll() })
+  vi.mocked(useRoute).mockReturnValue({ meta: { spec: SPEC } } as any)
+  vi.mocked(createResourceController).mockReturnValue({
+    useStore: () => makeStore(schemaPermissions),
+  } as any)
   return mount(ResourcePermissionWrapper, {
-    props: { permission },
+    props: { action },
     slots: { default: SlotContent },
     global: { stubs: { ResourcePermissionDeniedPage: true } },
   })
@@ -32,30 +50,34 @@ describe('ResourcePermissionWrapper', () => {
     configureVuePrince({ baseUrl: '' })
   })
 
-  it('renders the slot when no permission is required', () => {
-    const store = makePermissionsStore([])
-    const wrapper = mountWrapper(undefined, store)
+  it('renders the slot when no action is required', () => {
+    const permsStore = makePermissionsStore([])
+    const wrapper = mountWrapper(undefined, permsStore)
     expect(wrapper.findComponent(SlotContent).exists()).toBe(true)
     expect(wrapper.findComponent(ResourcePermissionDeniedPage).exists()).toBe(false)
   })
 
   it('renders the slot when the user has the required permission', () => {
-    const store = makePermissionsStore(['admin', 'editor'])
-    const wrapper = mountWrapper('admin', store)
+    const permsStore = makePermissionsStore(['admin', 'editor'])
+    const wrapper = mountWrapper('read', permsStore, { read: 'admin' })
     expect(wrapper.findComponent(SlotContent).exists()).toBe(true)
   })
 
   it('renders the denied page when the user lacks permission', () => {
-    const store = makePermissionsStore(['editor'])
-    const wrapper = mountWrapper('admin', store)
+    const permsStore = makePermissionsStore(['editor'])
+    const wrapper = mountWrapper('read', permsStore, { read: 'admin' })
     expect(wrapper.findComponent(ResourcePermissionDeniedPage).exists()).toBe(true)
     expect(wrapper.findComponent(SlotContent).exists()).toBe(false)
   })
 
   it('allows access when userPermissions is not configured', () => {
     configureVuePrince({ baseUrl: '' })
+    vi.mocked(useRoute).mockReturnValue({ meta: { spec: SPEC } } as any)
+    vi.mocked(createResourceController).mockReturnValue({
+      useStore: () => makeStore({ read: 'admin' }),
+    } as any)
     const wrapper = mount(ResourcePermissionWrapper, {
-      props: { permission: 'admin' },
+      props: { action: 'read' },
       slots: { default: SlotContent },
       global: { stubs: { ResourcePermissionDeniedPage: true } },
     })
@@ -63,11 +85,11 @@ describe('ResourcePermissionWrapper', () => {
   })
 
   it('reacts when permissions are granted at runtime', async () => {
-    const store = makePermissionsStore([])
-    const wrapper = mountWrapper('admin', store)
+    const permsStore = makePermissionsStore([])
+    const wrapper = mountWrapper('read', permsStore, { read: 'admin' })
     expect(wrapper.findComponent(ResourcePermissionDeniedPage).exists()).toBe(true)
 
-    store.all.value = ['admin']
+    permsStore.all.value = ['admin']
     await nextTick()
 
     expect(wrapper.findComponent(SlotContent).exists()).toBe(true)
@@ -75,11 +97,11 @@ describe('ResourcePermissionWrapper', () => {
   })
 
   it('reacts when permissions are revoked at runtime', async () => {
-    const store = makePermissionsStore(['admin'])
-    const wrapper = mountWrapper('admin', store)
+    const permsStore = makePermissionsStore(['admin'])
+    const wrapper = mountWrapper('read', permsStore, { read: 'admin' })
     expect(wrapper.findComponent(SlotContent).exists()).toBe(true)
 
-    store.all.value = []
+    permsStore.all.value = []
     await nextTick()
 
     expect(wrapper.findComponent(ResourcePermissionDeniedPage).exists()).toBe(true)

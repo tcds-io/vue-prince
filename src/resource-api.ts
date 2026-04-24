@@ -2,8 +2,13 @@ import type { ResourceId, ResourceListResponse, ResourceResponse, ResourceSchema
 import type { InferResourceModel, ResourceSpec } from './resource'
 import { getConfig } from './config'
 
+export type ResourceSchemaResponse = {
+  fields: ResourceSchemaField[]
+  permissions: Record<string, string>
+}
+
 export type ResourceApi<Model extends object> = {
-  schema(): Promise<ResourceSchemaField[]>
+  schema(): Promise<ResourceSchemaResponse>
   list(params?: Record<string, string | number | boolean>): Promise<ResourceListResponse<Model>>
   get(id: ResourceId): Promise<ResourceResponse<Model>>
   create(data: Partial<Model>): Promise<ResourceResponse<Model>>
@@ -26,8 +31,14 @@ export function createResourceApi<const S extends ResourceSpec>(
       const response = await fetch(`${getConfig().baseUrl}${spec.endpoints.api}/_schema`, {
         headers,
       })
-      const body = (await response.json()) as { schema: ResourceSchemaField[] }
-      return body.schema
+      const body = (await response.json()) as {
+        schema: ResourceSchemaField[]
+        permissions?: Record<string, string>
+      }
+      return {
+        fields: body.schema,
+        permissions: body.permissions ?? {},
+      }
     },
 
     async list(params) {

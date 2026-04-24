@@ -60,12 +60,7 @@ describe('createResourceRoutes', () => {
   })
 
   it('always registers all 5 routes regardless of userPermissions', () => {
-    const restricted: ResourceSpec = {
-      name: 'company',
-      endpoints: { api: '/api/companies', route: '/companies' },
-      permissions: { read: 'r', create: 'c', update: 'u', delete: 'd' },
-    }
     configureVuePrince({ baseUrl: '', userPermissions: () => [] })
-    expect(createResourceRoutes(restricted)).toHaveLength(5)
+    expect(createResourceRoutes(spec)).toHaveLength(5)
   })
 })

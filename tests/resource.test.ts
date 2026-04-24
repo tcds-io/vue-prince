@@ -64,12 +64,6 @@ describe('defineResource', () => {
     expect(result.title).toBe(title)
   })
 
-  it('preserves permissions', () => {
-    const permissions = { create: 'admin', delete: 'superadmin' }
-    const result = defineResource({ name: 'company', endpoints: companyEndpoints, permissions })
-    expect(result.permissions).toEqual(permissions)
-  })
-
   it('preserves custom page components', () => {
     const MyList = {}
     const result = defineResource({

@@ -5,6 +5,10 @@ import { createResourceController } from '../src'
 
 const BASE_API = '/api/companies'
 
+function makeSpec(api = BASE_API) {
+  return { name: 'company', endpoints: { api, route: '/companies' } }
+}
+
 function mockFetch(body: unknown, status = 200) {
   return vi.fn().mockResolvedValue({
     status,
@@ -12,8 +16,22 @@ function mockFetch(body: unknown, status = 200) {
   })
 }
 
-function makeSpec(api = BASE_API) {
-  return { name: 'company', endpoints: { api, route: '/companies' } }
+// Every CRUD action prefetches schema; this helper sets up both calls in sequence.
+function mockFetchWithSchema(
+  dataBody: unknown,
+  dataStatus = 200,
+  schemaPermissions: Record<string, string> = {},
+) {
+  return vi
+    .fn()
+    .mockResolvedValueOnce({
+      status: 200,
+      json: () => Promise.resolve({ schema: [], permissions: schemaPermissions }),
+    })
+    .mockResolvedValue({
+      status: dataStatus,
+      json: () => Promise.resolve(dataBody),
+    })
 }
 
 describe('createResourceController', () => {
@@ -31,26 +49,38 @@ describe('createResourceController', () => {
     expect(store.item).toBeNull()
     expect(store.itemMeta).toBeNull()
     expect(store.schemaFields).toEqual([])
+    expect(store.schemaPermissions).toEqual({})
+    expect(store.schemaLoaded).toBe(false)
     expect(store.loading).toBe(false)
     expect(store.error).toBeNull()
   })
 
   describe('fetchSchema()', () => {
-    it('fetches and stores schema fields', async () => {
+    it('fetches fields and permissions from /_schema', async () => {
       const schema = [
         { name: 'id', type: 'integer' },
         { name: 'name', type: 'string' },
       ]
-      global.fetch = mockFetch({ schema })
+      const permissions = { read: 'view_companies', create: 'create_company' }
+      global.fetch = mockFetch({ schema, permissions })
       const { useStore } = createResourceController(makeSpec())
       const store = useStore()
       await store.fetchSchema()
       expect(store.schemaFields).toEqual(schema)
+      expect(store.schemaPermissions).toEqual(permissions)
+      expect(store.schemaLoaded).toBe(true)
+    })
+
+    it('defaults permissions to {} when not in response', async () => {
+      global.fetch = mockFetch({ schema: [] })
+      const { useStore } = createResourceController(makeSpec())
+      const store = useStore()
+      await store.fetchSchema()
+      expect(store.schemaPermissions).toEqual({})
     })
 
     it('skips fetch if schema is already loaded', async () => {
-      const schema = [{ name: 'id', type: 'integer' }]
-      global.fetch = mockFetch({ schema })
+      global.fetch = mockFetch({ schema: [], permissions: {} })
       const { useStore } = createResourceController(makeSpec())
       const store = useStore()
       await store.fetchSchema()
@@ -65,6 +95,7 @@ describe('createResourceController', () => {
       await store.fetchSchema()
       expect(store.error).toContain('Network error')
       expect(store.loading).toBe(false)
+      expect(store.schemaLoaded).toBe(false)
     })
   })
 
@@ -79,7 +110,7 @@ describe('createResourceController', () => {
         last_page: 1,
         per_page: 15,
       }
-      global.fetch = mockFetch({ data, meta })
+      global.fetch = mockFetchWithSchema({ data, meta })
       const { useStore } = createResourceController(makeSpec())
       const store = useStore()
       await store.list()
@@ -88,17 +119,23 @@ describe('createResourceController', () => {
     })
 
     it('forwards params to the API', async () => {
-      global.fetch = mockFetch({ data: [], meta: {} })
+      global.fetch = mockFetchWithSchema({ data: [], meta: {} })
       const { useStore } = createResourceController(makeSpec())
       const store = useStore()
       await store.list({ page: '2', search: 'acme' })
-      const url = String((global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][0])
+      const url = String((global.fetch as ReturnType<typeof vi.fn>).mock.calls[1][0])
       expect(url).toContain('page=2')
       expect(url).toContain('search=acme')
     })
 
     it('sets error on failure', async () => {
-      global.fetch = vi.fn().mockRejectedValue(new Error('Timeout'))
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          status: 200,
+          json: () => Promise.resolve({ schema: [], permissions: {} }),
+        })
+        .mockRejectedValueOnce(new Error('Timeout'))
       const { useStore } = createResourceController(makeSpec())
       const store = useStore()
       await store.list()
@@ -110,7 +147,7 @@ describe('createResourceController', () => {
     it('populates item and itemMeta', async () => {
       const data = { id: 1, name: 'Acme' }
       const meta = { resource: 'company', schema: [], resources: [] }
-      global.fetch = mockFetch({ data, meta })
+      global.fetch = mockFetchWithSchema({ data, meta })
       const { useStore } = createResourceController(makeSpec())
       const store = useStore()
       await store.get(1)
@@ -122,7 +159,7 @@ describe('createResourceController', () => {
   describe('create()', () => {
     it('POSTs data, stores item, and returns it', async () => {
       const data = { id: 1, name: 'Acme' }
-      global.fetch = mockFetch({ data, meta: {} })
+      global.fetch = mockFetchWithSchema({ data, meta: {} })
       const { useStore } = createResourceController(makeSpec())
       const store = useStore()
       const result = await store.create({ name: 'Acme' })
@@ -134,7 +171,7 @@ describe('createResourceController', () => {
   describe('update()', () => {
     it('PATCHes data and stores the updated item', async () => {
       const data = { id: 1, name: 'Updated' }
-      global.fetch = mockFetch({ data, meta: {} })
+      global.fetch = mockFetchWithSchema({ data, meta: {} })
       const { useStore } = createResourceController(makeSpec())
       const store = useStore()
       await store.update(1, { name: 'Updated' })
@@ -147,10 +184,20 @@ describe('createResourceController', () => {
       global.fetch = vi
         .fn()
         .mockResolvedValueOnce({
+          // schema
+          status: 200,
+          json: () => Promise.resolve({ schema: [], permissions: {} }),
+        })
+        .mockResolvedValueOnce({
+          // get
           status: 200,
           json: () => Promise.resolve({ data: { id: 1, name: 'Acme' }, meta: {} }),
         })
-        .mockResolvedValueOnce({ status: 204, json: () => Promise.resolve(null) })
+        .mockResolvedValueOnce({
+          // update (204)
+          status: 204,
+          json: () => Promise.resolve(null),
+        })
       await store.get(1)
       await store.update(1, { name: 'Acme Updated' })
       expect((store.item as any)?.name).toBe('Acme Updated')
@@ -165,8 +212,17 @@ describe('createResourceController', () => {
       ]
       global.fetch = vi
         .fn()
-        .mockResolvedValueOnce({ status: 200, json: () => Promise.resolve({ data, meta: {} }) })
-        .mockResolvedValueOnce({ status: 204 })
+        .mockResolvedValueOnce({
+          // schema (reused by both list and remove)
+          status: 200,
+          json: () => Promise.resolve({ schema: [], permissions: {} }),
+        })
+        .mockResolvedValueOnce({
+          // list data
+          status: 200,
+          json: () => Promise.resolve({ data, meta: {} }),
+        })
+        .mockResolvedValueOnce({ status: 204 }) // remove
       const { useStore } = createResourceController(makeSpec())
       const store = useStore()
       await store.list()
@@ -178,11 +234,8 @@ describe('createResourceController', () => {
 
   describe('createMany()', () => {
     it('calls api.createMany and returns the created items', async () => {
-      const createdItems = [
-        { id: 1, name: 'Acme' },
-        { id: 2, name: 'Beta' },
-      ]
-      global.fetch = mockFetch({ data: createdItems.map((data) => ({ data })) })
+      const createdItems = [{ id: 1, name: 'Acme' }, { id: 2, name: 'Beta' }]
+      global.fetch = mockFetchWithSchema({ data: createdItems.map((d) => ({ data: d })) })
       const { useStore } = createResourceController(makeSpec())
       const store = useStore()
       const result = await store.createMany([{ name: 'Acme' }, { name: 'Beta' }])
@@ -191,13 +244,11 @@ describe('createResourceController', () => {
     })
 
     it('sets error when create permission is missing', async () => {
-      const restrictedSpec = {
-        name: 'company',
-        endpoints: { api: '/api/restricted-batch', route: '/restricted-batch' },
-        permissions: { read: 'r', create: 'c', update: 'u', delete: 'd' },
-      }
+      global.fetch = mockFetch({ schema: [], permissions: { create: 'c' } })
       configureVuePrince({ baseUrl: 'https://api.example.com', userPermissions: () => [] })
-      const { useStore } = createResourceController(restrictedSpec)
+      const { useStore } = createResourceController(
+        makeSpec('/api/companies-batch-create'),
+      )
       const store = useStore()
       await store.createMany([{ name: 'Acme' }])
       expect(store.error).toContain('Permission denied: create')
@@ -206,7 +257,7 @@ describe('createResourceController', () => {
 
   describe('updateMany()', () => {
     it('calls api.updateMany and clears error on success', async () => {
-      global.fetch = vi.fn().mockResolvedValue({ status: 204 })
+      global.fetch = mockFetchWithSchema(null, 204)
       const { useStore } = createResourceController(makeSpec())
       const store = useStore()
       await store.updateMany([{ id: 1, name: 'Updated' }])
@@ -215,13 +266,9 @@ describe('createResourceController', () => {
     })
 
     it('sets error when update permission is missing', async () => {
-      const restrictedSpec = {
-        name: 'company',
-        endpoints: { api: '/api/restricted-batch2', route: '/restricted-batch2' },
-        permissions: { read: 'r', create: 'c', update: 'u', delete: 'd' },
-      }
+      global.fetch = mockFetch({ schema: [], permissions: { update: 'u' } })
       configureVuePrince({ baseUrl: 'https://api.example.com', userPermissions: () => [] })
-      const { useStore } = createResourceController(restrictedSpec)
+      const { useStore } = createResourceController(makeSpec('/api/companies-batch-update'))
       const store = useStore()
       await store.updateMany([{ id: 1, name: 'Updated' }])
       expect(store.error).toContain('Permission denied: update')
@@ -237,6 +284,10 @@ describe('createResourceController', () => {
       ]
       global.fetch = vi
         .fn()
+        .mockResolvedValueOnce({
+          status: 200,
+          json: () => Promise.resolve({ schema: [], permissions: {} }),
+        })
         .mockResolvedValueOnce({ status: 200, json: () => Promise.resolve({ data, meta: {} }) })
         .mockResolvedValueOnce({ status: 204 })
       const { useStore } = createResourceController(makeSpec())
@@ -248,13 +299,9 @@ describe('createResourceController', () => {
     })
 
     it('sets error when delete permission is missing', async () => {
-      const restrictedSpec = {
-        name: 'company',
-        endpoints: { api: '/api/restricted-batch3', route: '/restricted-batch3' },
-        permissions: { read: 'r', create: 'c', update: 'u', delete: 'd' },
-      }
+      global.fetch = mockFetch({ schema: [], permissions: { delete: 'd' } })
       configureVuePrince({ baseUrl: 'https://api.example.com', userPermissions: () => [] })
-      const { useStore } = createResourceController(restrictedSpec)
+      const { useStore } = createResourceController(makeSpec('/api/companies-batch-delete'))
       const store = useStore()
       await store.deleteMany([1, 2])
       expect(store.error).toContain('Permission denied: delete')
@@ -267,7 +314,7 @@ describe('createResourceController', () => {
         { id: 1, name: 'Acme', _resource: 'company' },
         { id: 2, name: 'Beta', _resource: 'company' },
       ]
-      global.fetch = mockFetch({ data, meta: {} })
+      global.fetch = mockFetchWithSchema({ data, meta: {} })
       const { useStore } = createResourceController(makeSpec())
       const store = useStore()
       await store.list()
@@ -293,7 +340,7 @@ describe('createResourceController', () => {
       const store = useStore()
       const promise = store.list()
       expect(store.loading).toBe(true)
-      resolve!({ status: 200, json: () => Promise.resolve({ data: [], meta: {} }) })
+      resolve!({ status: 200, json: () => Promise.resolve({ schema: [], data: [], meta: {} }) })
       await promise
       expect(store.loading).toBe(false)
     })
@@ -308,10 +355,16 @@ describe('createResourceController', () => {
   })
 
   describe('permission enforcement', () => {
-    const restrictedSpec = {
-      name: 'company',
-      endpoints: { api: '/api/restricted', route: '/restricted' },
-      permissions: { read: 'r', create: 'c', update: 'u', delete: 'd' },
+    // Permissions now come from the schema response, not the spec.
+    // Each test mocks the schema endpoint to return the required permission strings.
+    const restrictedApi = '/api/restricted'
+    const restrictedSpec = { name: 'company', endpoints: { api: restrictedApi, route: '/restricted' } }
+
+    function mockRestrictedSchema() {
+      return mockFetch({
+        schema: [],
+        permissions: { read: 'r', create: 'c', update: 'u', delete: 'd' },
+      })
     }
 
     beforeEach(() => {
@@ -319,6 +372,7 @@ describe('createResourceController', () => {
     })
 
     it('list sets error when read permission is missing', async () => {
+      global.fetch = mockRestrictedSchema()
       const { useStore } = createResourceController(restrictedSpec)
       const store = useStore()
       await store.list()
@@ -326,6 +380,7 @@ describe('createResourceController', () => {
     })
 
     it('get sets error when read permission is missing', async () => {
+      global.fetch = mockRestrictedSchema()
       const { useStore } = createResourceController(restrictedSpec)
       const store = useStore()
       await store.get(1)
@@ -333,6 +388,7 @@ describe('createResourceController', () => {
     })
 
     it('create sets error when create permission is missing', async () => {
+      global.fetch = mockRestrictedSchema()
       const { useStore } = createResourceController(restrictedSpec)
       const store = useStore()
       await store.create({ name: 'Acme' })
@@ -340,6 +396,7 @@ describe('createResourceController', () => {
     })
 
     it('update sets error when update permission is missing', async () => {
+      global.fetch = mockRestrictedSchema()
       const { useStore } = createResourceController(restrictedSpec)
       const store = useStore()
       await store.update(1, { name: 'Acme' })
@@ -347,6 +404,7 @@ describe('createResourceController', () => {
     })
 
     it('remove sets error when delete permission is missing', async () => {
+      global.fetch = mockRestrictedSchema()
       const { useStore } = createResourceController(restrictedSpec)
       const store = useStore()
       await store.remove(1)
@@ -354,6 +412,7 @@ describe('createResourceController', () => {
     })
 
     it('resets loading to false after permission denial', async () => {
+      global.fetch = mockRestrictedSchema()
       const { useStore } = createResourceController(restrictedSpec)
       const store = useStore()
       await store.list()
@@ -362,7 +421,16 @@ describe('createResourceController', () => {
 
     it('allows calls when user has the required permission', async () => {
       configureVuePrince({ baseUrl: 'https://api.example.com', userPermissions: () => ['r'] })
-      global.fetch = mockFetch({ data: [], meta: {} })
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          status: 200,
+          json: () => Promise.resolve({ schema: [], permissions: { read: 'r' } }),
+        })
+        .mockResolvedValueOnce({
+          status: 200,
+          json: () => Promise.resolve({ data: [], meta: {} }),
+        })
       const { useStore } = createResourceController(restrictedSpec)
       const store = useStore()
       await store.list()
