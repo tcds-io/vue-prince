@@ -12,16 +12,17 @@ import { createResourceController } from '../../src/resource-controller'
 
 function makeStore(overrides: Record<string, unknown> = {}) {
   return {
-    list: [],
-    listMeta: null,
+    items: [],
+    itemsMeta: null,
+    itemsById: {} as Record<string | number, unknown>,
     item: null,
     itemMeta: null,
     schemaFields: [] as unknown[],
     loading: false,
     error: null as string | null,
     fetchSchema: vi.fn().mockResolvedValue(undefined),
-    fetchList: vi.fn().mockResolvedValue(undefined),
-    fetchItem: vi.fn().mockResolvedValue(undefined),
+    list: vi.fn().mockResolvedValue(undefined),
+    get: vi.fn().mockResolvedValue(undefined),
     create: vi.fn().mockResolvedValue({ id: 5 }),
     update: vi.fn().mockResolvedValue({ id: 5 }),
     remove: vi.fn().mockResolvedValue(undefined),

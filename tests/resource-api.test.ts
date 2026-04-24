@@ -144,7 +144,7 @@ describe('createResourceApi', () => {
     })
   })
 
-  describe('batchCreate()', () => {
+  describe('createMany()', () => {
     it('POSTs to the base URL (no /{id}) with { data: [...] } body', async () => {
       global.fetch = mockFetch({
         data: [
@@ -152,7 +152,7 @@ describe('createResourceApi', () => {
           { id: 2, name: 'Beta' },
         ],
       })
-      await createResourceApi(spec).batchCreate([{ name: 'Acme' }, { name: 'Beta' }] as any)
+      await createResourceApi(spec).createMany([{ name: 'Acme' }, { name: 'Beta' }] as any)
       const [url, options] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0]
       expect(url).toBe('https://api.example.com/api/companies')
       expect(options.method).toBe('POST')
@@ -162,26 +162,26 @@ describe('createResourceApi', () => {
     it('returns array from { data: [...] } enveloped response', async () => {
       const items = [{ data: { id: 1, name: 'Acme' } }, { data: { id: 2, name: 'Beta' } }]
       global.fetch = mockFetch({ data: items })
-      const result = await createResourceApi(spec).batchCreate([{ name: 'Acme' }] as any)
+      const result = await createResourceApi(spec).createMany([{ name: 'Acme' }] as any)
       expect(result).toEqual(items)
     })
 
     it('returns bare array response as-is', async () => {
       const items = [{ data: { id: 1, name: 'Acme' } }]
       global.fetch = mockFetch(items)
-      const result = await createResourceApi(spec).batchCreate([{ name: 'Acme' }] as any)
+      const result = await createResourceApi(spec).createMany([{ name: 'Acme' }] as any)
       expect(result).toEqual(items)
     })
   })
 
-  describe('batchUpdate()', () => {
+  describe('updateMany()', () => {
     it('PATCHes the base URL with { data: [...] } body', async () => {
       global.fetch = vi.fn().mockResolvedValue({ status: 204 })
       const payload = [
         { id: 1, name: 'Updated' },
         { id: 2, name: 'Also Updated' },
       ]
-      await createResourceApi(spec).batchUpdate(payload as any)
+      await createResourceApi(spec).updateMany(payload as any)
       const [url, options] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0]
       expect(url).toBe('https://api.example.com/api/companies')
       expect(options.method).toBe('PATCH')
@@ -189,10 +189,10 @@ describe('createResourceApi', () => {
     })
   })
 
-  describe('batchDelete()', () => {
+  describe('deleteMany()', () => {
     it('DELETEs the base URL with { data: [...] } body (no /{id} in URL)', async () => {
       global.fetch = vi.fn().mockResolvedValue({ status: 204 })
-      await createResourceApi(spec).batchDelete([1, 2, 3])
+      await createResourceApi(spec).deleteMany([1, 2, 3])
       const [url, options] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0]
       expect(url).toBe('https://api.example.com/api/companies')
       expect(options.method).toBe('DELETE')

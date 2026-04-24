@@ -38,7 +38,7 @@
     />
 
     <template #footer>
-      <div v-if="store.listMeta" class="vue-resource prince-pagination">
+      <div v-if="store.itemsMeta" class="vue-resource prince-pagination">
         <PrinceButton type="Pagination" label="|←" :disabled="page <= 1" @click="goToPage(1)" />
         <PrinceButton
           type="Pagination"
@@ -57,14 +57,14 @@
         <PrinceButton
           type="Pagination"
           label="→"
-          :disabled="page >= store.listMeta.last_page"
+          :disabled="page >= store.itemsMeta.last_page"
           @click="goToPage(page + 1)"
         />
         <PrinceButton
           type="Pagination"
           label="→|"
-          :disabled="page >= store.listMeta.last_page"
-          @click="goToPage(store.listMeta.last_page)"
+          :disabled="page >= store.itemsMeta.last_page"
+          @click="goToPage(store.itemsMeta.last_page)"
         />
       </div>
     </template>
@@ -110,8 +110,8 @@ const hasSpecFields = specFields && Object.keys(specFields).length > 0
 
 const schema = useResourceSchema(
   () =>
-    store.listMeta?.schema?.length
-      ? store.listMeta.schema
+    store.itemsMeta?.schema?.length
+      ? store.itemsMeta.schema
       : (store.schemaFields as ResourceSchemaField[]),
   { previewOnly: true },
 )
@@ -149,14 +149,14 @@ function onSearchInput() {
 }
 
 const pages = computed<number[]>(() => {
-  const last = store.listMeta?.last_page ?? 1
+  const last = store.itemsMeta?.last_page ?? 1
   const p = page.value
   const start = Math.min(Math.max(1, p - 1), Math.max(1, last - 2))
   const end = Math.min(start + 2, last)
   return Array.from({ length: end - start + 1 }, (_, i) => start + i)
 })
 
-watch([page, search], ([p, s]) => store.fetchList({ page: String(p), ...s }), { immediate: true })
+watch([page, search], ([p, s]) => store.list({ page: String(p), ...s }), { immediate: true })
 
 onMounted(() => {
   if (!hasSpecFields) store.fetchSchema()
@@ -184,7 +184,7 @@ const listActions = computed(() =>
 const customComponent = computed(() => route.meta.spec?.components?.list)
 const searchComponent = computed(() => route.meta.spec?.components?.search)
 
-const items = computed(() => store.list as ResourceListItem<Record<string, unknown>>[])
+const items = computed(() => store.items as ResourceListItem<Record<string, unknown>>[])
 
 const { labelMap } = useResourceLabelMap(
   () => items.value,
@@ -220,7 +220,7 @@ const customProps = computed<ResourceListPageProps>(() => ({
   resource: route.meta.spec?.name,
   loading: store.loading,
   error: store.error,
-  listMeta: store.listMeta,
+  itemsMeta: store.itemsMeta,
   page: page.value,
   search: search.value,
   navigateToItem,

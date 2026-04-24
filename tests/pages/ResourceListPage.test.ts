@@ -12,16 +12,17 @@ import { createResourceController } from '../../src/resource-controller'
 
 function makeStore(overrides: Record<string, unknown> = {}) {
   return {
-    list: [] as unknown[],
-    listMeta: null as any,
+    items: [] as unknown[],
+    itemsMeta: null as any,
+    itemsById: {} as Record<string | number, unknown>,
     item: null,
     itemMeta: null,
     schemaFields: [] as unknown[],
     loading: false,
     error: null as string | null,
     fetchSchema: vi.fn().mockResolvedValue(undefined),
-    fetchList: vi.fn().mockResolvedValue(undefined),
-    fetchItem: vi.fn().mockResolvedValue(undefined),
+    list: vi.fn().mockResolvedValue(undefined),
+    get: vi.fn().mockResolvedValue(undefined),
     create: vi.fn().mockResolvedValue({ id: 1 }),
     update: vi.fn().mockResolvedValue({ id: 1 }),
     remove: vi.fn().mockResolvedValue(undefined),
@@ -65,22 +66,22 @@ describe('ResourceListPage', () => {
   }
 
   describe('on mount', () => {
-    it('calls fetchList immediately with page 1', async () => {
+    it('calls list immediately with page 1', async () => {
       mountPage()
       await flushPromises()
-      expect(store.fetchList).toHaveBeenCalledWith({ page: '1' })
+      expect(store.list).toHaveBeenCalledWith({ page: '1' })
     })
 
-    it('passes page from route query to fetchList', async () => {
+    it('passes page from route query to list', async () => {
       mountPage(BASE_SPEC, { page: '4' })
       await flushPromises()
-      expect(store.fetchList).toHaveBeenCalledWith({ page: '4' })
+      expect(store.list).toHaveBeenCalledWith({ page: '4' })
     })
 
-    it('forwards extra query params as search to fetchList', async () => {
+    it('forwards extra query params as search to list', async () => {
       mountPage(BASE_SPEC, { page: '1', search: '%acme%' })
       await flushPromises()
-      expect(store.fetchList).toHaveBeenCalledWith({ page: '1', search: '%acme%' })
+      expect(store.list).toHaveBeenCalledWith({ page: '1', search: '%acme%' })
     })
 
     it('calls fetchSchema when spec has no fields', async () => {
@@ -204,20 +205,20 @@ describe('ResourceListPage', () => {
       expect((wrapper.findComponent(CustomList).vm.$attrs as any).page).toBe(2)
     })
 
-    it('passes listMeta', () => {
-      store.listMeta = { current_page: 1, total: 5, last_page: 1, per_page: 15 }
+    it('passes itemsMeta', () => {
+      store.itemsMeta = { current_page: 1, total: 5, last_page: 1, per_page: 15 }
       const wrapper = mountCustom()
-      expect((wrapper.findComponent(CustomList).vm.$attrs as any).listMeta).toEqual(store.listMeta)
+      expect((wrapper.findComponent(CustomList).vm.$attrs as any).itemsMeta).toEqual(store.itemsMeta)
     })
   })
 
   describe('pages window computed', () => {
     it('shows up to 3 page numbers centred on the current page', async () => {
-      store.listMeta = { current_page: 5, total: 100, last_page: 10, per_page: 10, schema: [] }
+      store.itemsMeta = { current_page: 5, total: 100, last_page: 10, per_page: 10, schema: [] }
       const wrapper = mountCustom({ page: '5' })
       await flushPromises()
       // pages window: [4, 5, 6]
-      expect((wrapper.findComponent(CustomList).vm.$attrs as any).listMeta?.last_page).toBe(10)
+      expect((wrapper.findComponent(CustomList).vm.$attrs as any).itemsMeta?.last_page).toBe(10)
     })
 
     function mountCustom(query: Record<string, string> = {}) {

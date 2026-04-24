@@ -44,7 +44,7 @@ const itemTitle = computed(() => {
 const displayTitle = computed(() => itemTitle.value ?? id)
 
 onMounted(() => {
-  store.fetchItem(id)
+  store.get(id)
 })
 
 function cancel() {

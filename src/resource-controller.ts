@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import type {
   ResourceId,
   ResourceListItem,
@@ -18,8 +18,8 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
   const api = createResourceApi(spec)
 
   const useStore = defineStore(`resource:${spec.endpoints.api}`, () => {
-    const list = ref<ResourceListItem<ListModel>[]>([])
-    const listMeta = ref<ResourceListMetadata | null>(null)
+    const items = ref<ResourceListItem<ListModel>[]>([])
+    const itemsMeta = ref<ResourceListMetadata | null>(null)
     const item = ref<Model | null>(null)
     const itemMeta = ref<ResourceMetadata | null>(null)
     const schemaFields = ref<ResourceSchemaField[]>([])
@@ -39,14 +39,14 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
       }
     }
 
-    async function fetchList(params?: Record<string, string | number | boolean>) {
+    async function list(params?: Record<string, string | number | boolean>) {
       loading.value = true
       error.value = null
       try {
         if (!hasPermission(spec, 'read')) throw new Error('Permission denied: read')
         const res = await api.list(params)
-        list.value = res.data
-        listMeta.value = res.meta
+        items.value = res.data
+        itemsMeta.value = res.meta
       } catch (e) {
         error.value = String(e)
       } finally {
@@ -54,7 +54,7 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
       }
     }
 
-    async function fetchItem(id: ResourceId) {
+    async function get(id: ResourceId) {
       loading.value = true
       error.value = null
       try {
@@ -109,7 +109,7 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
       try {
         if (!hasPermission(spec, 'delete')) throw new Error('Permission denied: delete')
         await api.remove(id)
-        list.value = list.value.filter((r) => !('id' in r) || r.id !== id)
+        items.value = items.value.filter((r) => !('id' in r) || r.id !== id)
       } catch (e) {
         error.value = String(e)
       } finally {
@@ -117,12 +117,12 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
       }
     }
 
-    async function batchCreate(data: Partial<Model>[]) {
+    async function createMany(data: Partial<Model>[]) {
       loading.value = true
       error.value = null
       try {
         if (!hasPermission(spec, 'create')) throw new Error('Permission denied: create')
-        const results = await api.batchCreate(data)
+        const results = await api.createMany(data)
         return results.map((r) => r.data)
       } catch (e) {
         error.value = String(e)
@@ -131,12 +131,12 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
       }
     }
 
-    async function batchUpdate(data: (Partial<Model> & { id: ResourceId })[]) {
+    async function updateMany(data: (Partial<Model> & { id: ResourceId })[]) {
       loading.value = true
       error.value = null
       try {
         if (!hasPermission(spec, 'update')) throw new Error('Permission denied: update')
-        await api.batchUpdate(data)
+        await api.updateMany(data)
       } catch (e) {
         error.value = String(e)
       } finally {
@@ -144,13 +144,13 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
       }
     }
 
-    async function batchDelete(ids: ResourceId[]) {
+    async function deleteMany(ids: ResourceId[]) {
       loading.value = true
       error.value = null
       try {
         if (!hasPermission(spec, 'delete')) throw new Error('Permission denied: delete')
-        await api.batchDelete(ids)
-        list.value = list.value.filter((r) => !('id' in r) || !ids.includes(r.id as ResourceId))
+        await api.deleteMany(ids)
+        items.value = items.value.filter((r) => !('id' in r) || !ids.includes(r.id as ResourceId))
       } catch (e) {
         error.value = String(e)
       } finally {
@@ -158,23 +158,30 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
       }
     }
 
+    const itemsById = computed(() =>
+      Object.fromEntries(
+        items.value.filter((r) => 'id' in r).map((r) => [(r as { id: ResourceId }).id, r]),
+      ),
+    )
+
     return {
-      list,
-      listMeta,
+      items,
+      itemsMeta,
+      itemsById,
       item,
       itemMeta,
       schemaFields,
       loading,
       error,
       fetchSchema,
-      fetchList,
-      fetchItem,
+      list,
+      get,
       create,
       update,
       remove,
-      batchCreate,
-      batchUpdate,
-      batchDelete,
+      createMany,
+      updateMany,
+      deleteMany,
     }
   })
 

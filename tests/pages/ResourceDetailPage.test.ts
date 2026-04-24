@@ -12,16 +12,17 @@ import { createResourceController } from '../../src/resource-controller'
 
 function makeStore(overrides: Record<string, unknown> = {}) {
   return {
-    list: [],
-    listMeta: null,
+    items: [],
+    itemsMeta: null,
+    itemsById: {} as Record<string | number, unknown>,
     item: null as Record<string, unknown> | null,
     itemMeta: null,
     schemaFields: [] as unknown[],
     loading: false,
     error: null as string | null,
     fetchSchema: vi.fn().mockResolvedValue(undefined),
-    fetchList: vi.fn().mockResolvedValue(undefined),
-    fetchItem: vi.fn().mockResolvedValue(undefined),
+    list: vi.fn().mockResolvedValue(undefined),
+    get: vi.fn().mockResolvedValue(undefined),
     create: vi.fn().mockResolvedValue({ id: 1 }),
     update: vi.fn().mockResolvedValue({ id: 1 }),
     remove: vi.fn().mockResolvedValue(undefined),
@@ -59,10 +60,10 @@ describe('ResourceDetailPage', () => {
   }
 
   describe('on mount', () => {
-    it('calls fetchItem with the id from route params', async () => {
+    it('calls get with the id from route params', async () => {
       mountPage(BASE_SPEC, '42')
       await flushPromises()
-      expect(store.fetchItem).toHaveBeenCalledWith('42')
+      expect(store.get).toHaveBeenCalledWith('42')
     })
 
     it('calls fetchSchema when spec has no fields', async () => {
