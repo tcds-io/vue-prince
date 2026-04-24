@@ -210,7 +210,9 @@ describe('ResourceListPage', () => {
     it('passes itemsMeta', () => {
       store.itemsMeta = { current_page: 1, total: 5, last_page: 1, per_page: 15 }
       const wrapper = mountCustom()
-      expect((wrapper.findComponent(CustomList).vm.$attrs as any).itemsMeta).toEqual(store.itemsMeta)
+      expect((wrapper.findComponent(CustomList).vm.$attrs as any).itemsMeta).toEqual(
+        store.itemsMeta,
+      )
     })
   })
 

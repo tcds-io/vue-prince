@@ -6,7 +6,7 @@
         :key="i"
         class="vue-resource resource-tab-btn"
         :class="{ active: activeTab === i }"
-        @click="activeTab = i"
+        @click="setTab(i)"
       >
         {{ label }}
       </button>
@@ -16,11 +16,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
-defineProps<{ labels: string[] }>()
+const props = defineProps<{ labels: string[]; modelValue?: number }>()
+const emit = defineEmits<{ 'update:modelValue': [value: number] }>()
 
-const activeTab = ref(0)
+const internalTab = ref(0)
+const activeTab = computed(() => props.modelValue ?? internalTab.value)
+
+function setTab(i: number) {
+  internalTab.value = i
+  emit('update:modelValue', i)
+}
 </script>
 
 <style>
