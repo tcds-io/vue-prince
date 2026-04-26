@@ -32,7 +32,7 @@ function mountDetail(overrides: Record<string, unknown> = {}) {
 }
 
 describe('ResourceDetailView', () => {
-  beforeEach(() => configureVuePrince({ baseUrl: '' }))
+  beforeEach(() => configureVuePrince({ api: { baseUrl: '' } }))
 
   describe('loading state', () => {
     it('shows Loading… text', () => {

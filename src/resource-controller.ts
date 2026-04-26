@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import type {
+  ResourceApi,
   ResourceId,
   ResourceListItem,
   ResourceListMetadata,
@@ -9,15 +10,14 @@ import type {
 } from './api'
 import type { InferResourceListModel, InferResourceModel, ResourceSpec } from './resource'
 import { hasPermission } from './resource'
-import { createResourceApi } from './resource-api'
 
 export function createResourceController<const S extends ResourceSpec>(spec: S) {
   type Model = InferResourceModel<S>
   type ListModel = InferResourceListModel<S>
 
-  const api = createResourceApi(spec)
+  const api = spec.api() as ResourceApi<Model>
 
-  const useStore = defineStore(`resource:${spec.endpoints.api}`, () => {
+  const useStore = defineStore(`resource:${spec.route}`, () => {
     const items = ref<ResourceListItem<ListModel>[]>([])
     const itemsMeta = ref<ResourceListMetadata | null>(null)
     const item = ref<Model | null>(null)
@@ -216,5 +216,5 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
     }
   })
 
-  return { useStore }
+  return { store: useStore, api }
 }

@@ -5,7 +5,7 @@ import PrinceCard from '../../src/ui/PrinceCard.vue'
 import { configureVuePrince } from '../../src/config'
 
 describe('PrinceCard', () => {
-  beforeEach(() => configureVuePrince({ baseUrl: '' }))
+  beforeEach(() => configureVuePrince({ api: { baseUrl: '' } }))
 
   it('renders the default card wrapper', () => {
     const wrapper = mount(PrinceCard)
@@ -55,7 +55,7 @@ describe('PrinceCard', () => {
   describe('custom layout.card', () => {
     it('renders the custom card component instead of the default', () => {
       const MyCard = defineComponent({ template: '<section class="my-card"><slot/></section>' })
-      configureVuePrince({ baseUrl: '', layout: { card: MyCard } })
+      configureVuePrince({ api: { baseUrl: '' }, layout: { card: MyCard } })
       const wrapper = mount(PrinceCard)
       expect(wrapper.find('.my-card').exists()).toBe(true)
       expect(wrapper.find('.prince-card--default').exists()).toBe(false)
@@ -63,7 +63,7 @@ describe('PrinceCard', () => {
 
     it('passes title prop to custom card component', () => {
       const MyCard = defineComponent({ props: ['title'], template: '<div>{{ title }}</div>' })
-      configureVuePrince({ baseUrl: '', layout: { card: MyCard } })
+      configureVuePrince({ api: { baseUrl: '' }, layout: { card: MyCard } })
       const wrapper = mount(PrinceCard, { props: { title: 'My Title' } })
       expect(wrapper.text()).toContain('My Title')
     })

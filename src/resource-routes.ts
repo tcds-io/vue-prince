@@ -47,7 +47,7 @@ function withPermission(inner: Component, action: string): Component {
 }
 
 export function createResourceRoutes(spec: ResourceSpec): RouteRecordRaw[] {
-  const basePath = spec.endpoints.route.replace(/^\//, '')
+  const basePath = spec.route.replace(/^\//, '')
   const segment = basePath.split('/').pop()!
 
   return [

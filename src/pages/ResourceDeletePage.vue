@@ -31,10 +31,10 @@ import PrinceCard from '../ui/PrinceCard.vue'
 
 const route = useRoute()
 const router = useRouter()
-const store = createResourceController(route.meta.spec!).useStore()
+const store = createResourceController(route.meta.spec!).store()
 
 const id = route.params.id as string
-const segment = computed(() => route.meta.spec?.endpoints.route.split('/').pop())
+const segment = computed(() => route.meta.spec?.route.split('/').pop())
 
 const itemTitle = computed(() => {
   const titleFn = route.meta.spec?.title

@@ -1,18 +1,15 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { ref } from 'vue'
 import { flushPromises } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
+import { useRoute } from 'vue-router'
 import {
-  useResourceSchema,
-  useResourceLabels,
-  useResourceLabelMap,
   clearLabelCache,
+  useResourceLabelMap,
+  useResourceLabels,
+  useResourceSchema,
 } from '../src/pages/use-resource-meta'
 
 vi.mock('vue-router', () => ({ useRoute: vi.fn() }))
-vi.mock('../src/resource-api', () => ({ createResourceApi: vi.fn() }))
-
-import { useRoute } from 'vue-router'
-import { createResourceApi } from '../src/resource-api'
 
 function makeRoute(spec?: Record<string, unknown>) {
   return { meta: { spec }, params: {}, query: {} } as any
@@ -102,29 +99,29 @@ describe('useResourceSchema', () => {
 })
 
 describe('useResourceLabelMap', () => {
+  let mockList: ReturnType<typeof vi.fn>
+
   const companySpec = {
     name: 'company',
-    endpoints: { api: '/companies', route: '/companies' },
+    route: '/companies',
+    api: () => ({ list: mockList }) as any,
     title: (i: any) => i.name,
   }
   const specFields = { company_id: { type: () => companySpec } }
 
-  function mockApi(data: unknown[]) {
-    vi.mocked(createResourceApi).mockReturnValue({
-      list: vi.fn().mockResolvedValue({ data, meta: {} }),
-    } as any)
-  }
-
   beforeEach(() => {
-    vi.mocked(createResourceApi).mockReset()
+    mockList = vi.fn().mockResolvedValue({ data: [], meta: {} })
     clearLabelCache()
   })
 
   it('resolves labels from a batch API response', async () => {
-    mockApi([
-      { id: 1, name: 'Acme', _resource: 'company' },
-      { id: 2, name: 'Beta', _resource: 'company' },
-    ])
+    mockList = vi.fn().mockResolvedValue({
+      data: [
+        { id: 1, name: 'Acme', _resource: 'company' },
+        { id: 2, name: 'Beta', _resource: 'company' },
+      ],
+      meta: {},
+    })
     const items = [
       { id: 10, company_id: 1, _resource: 'order' },
       { id: 11, company_id: 2, _resource: 'order' },
@@ -139,8 +136,7 @@ describe('useResourceLabelMap', () => {
   })
 
   it('passes unique IDs as comma-separated "id" param', async () => {
-    const mockList = vi.fn().mockResolvedValue({ data: [], meta: {} })
-    vi.mocked(createResourceApi).mockReturnValue({ list: mockList } as any)
+    mockList = vi.fn().mockResolvedValue({ data: [], meta: {} })
     const items = [
       { id: 1, company_id: 3, _resource: 'order' },
       { id: 2, company_id: 3, _resource: 'order' },
@@ -160,8 +156,6 @@ describe('useResourceLabelMap', () => {
   })
 
   it('skips fetch when items is empty', async () => {
-    const mockList = vi.fn()
-    vi.mocked(createResourceApi).mockReturnValue({ list: mockList } as any)
     useResourceLabelMap(
       () => [],
       () => specFields,
@@ -171,8 +165,6 @@ describe('useResourceLabelMap', () => {
   })
 
   it('skips fetch when spec has no resource-ref fields', async () => {
-    const mockList = vi.fn()
-    vi.mocked(createResourceApi).mockReturnValue({ list: mockList } as any)
     const plainFields = { name: { type: 'string' as const } }
     const items = [{ id: 1, name: 'foo', _resource: 'x' }] as any[]
     useResourceLabelMap(
@@ -184,8 +176,6 @@ describe('useResourceLabelMap', () => {
   })
 
   it('skips fetch when specFields is undefined', async () => {
-    const mockList = vi.fn()
-    vi.mocked(createResourceApi).mockReturnValue({ list: mockList } as any)
     const items = [{ id: 1, _resource: 'x' }] as any[]
     useResourceLabelMap(
       () => items,
@@ -196,9 +186,7 @@ describe('useResourceLabelMap', () => {
   })
 
   it('falls back gracefully on network error', async () => {
-    vi.mocked(createResourceApi).mockReturnValue({
-      list: vi.fn().mockRejectedValue(new Error('network error')),
-    } as any)
+    mockList = vi.fn().mockRejectedValue(new Error('network error'))
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const items = [{ id: 1, company_id: 9, _resource: 'order' }] as any[]
     const { labelMap } = useResourceLabelMap(
@@ -212,11 +200,10 @@ describe('useResourceLabelMap', () => {
   })
 
   it('does not re-fetch IDs already cached when items change', async () => {
-    const mockList = vi.fn().mockResolvedValue({
+    mockList = vi.fn().mockResolvedValue({
       data: [{ id: 1, name: 'Acme', _resource: 'company' }],
       meta: {},
     })
-    vi.mocked(createResourceApi).mockReturnValue({ list: mockList } as any)
     const itemsRef = ref([{ id: 10, company_id: 1, _resource: 'order' }] as any[])
     useResourceLabelMap(
       () => itemsRef.value,
@@ -233,11 +220,16 @@ describe('useResourceLabelMap', () => {
   })
 
   it('uses String(item.id) as title when spec.title is absent', async () => {
-    const specWithoutTitle = { name: 'tag', endpoints: { api: '/tags', route: '/tags' } }
+    const tagMockList: ReturnType<typeof vi.fn> = vi.fn().mockResolvedValue({
+      data: [{ id: 42, _resource: 'tag' }],
+      meta: {},
+    })
+    const specWithoutTitle = {
+      name: 'tag',
+      route: '/tags',
+      api: () => ({ list: tagMockList }) as any,
+    }
     const fieldsWithoutTitle = { tag_id: { type: () => specWithoutTitle } }
-    vi.mocked(createResourceApi).mockReturnValue({
-      list: vi.fn().mockResolvedValue({ data: [{ id: 42, _resource: 'tag' }], meta: {} }),
-    } as any)
     const items = [{ id: 1, tag_id: 42, _resource: 'post' }] as any[]
     const { labelMap } = useResourceLabelMap(
       () => items,

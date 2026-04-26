@@ -28,10 +28,10 @@ import { useResourceSchema, useResourceLabels } from './use-resource-meta'
 
 const route = useRoute()
 const router = useRouter()
-const store = createResourceController(route.meta.spec!).useStore()
+const store = createResourceController(route.meta.spec!).store()
 
 const id = route.params.id as string
-const segment = computed(() => route.meta.spec?.endpoints.route.split('/').pop())
+const segment = computed(() => route.meta.spec?.route.split('/').pop())
 
 const schema = useResourceSchema(() =>
   store.itemMeta?.schema?.length

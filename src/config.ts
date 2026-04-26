@@ -1,4 +1,5 @@
 import type { Component } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 import type { ResourceListItem, ResourceSchemaField } from './api'
 import type { PrinceButtonType } from './button-props'
 import type { SpecFieldType } from './resource'
@@ -35,7 +36,10 @@ export type LayoutComponentMap = {
 }
 
 export type VuePrinceConfig = {
-  baseUrl: string
+  api: {
+    baseUrl: string
+    headers?: MaybeRefOrGetter<Record<string, string>>
+  }
   fields?: FieldComponentMap
   buttons?: ButtonComponentMap
   layout?: LayoutComponentMap
@@ -43,7 +47,7 @@ export type VuePrinceConfig = {
 }
 
 let _config: VuePrinceConfig = {
-  baseUrl: '',
+  api: { baseUrl: '' },
 }
 
 export function configureVuePrince(config: VuePrinceConfig): void {

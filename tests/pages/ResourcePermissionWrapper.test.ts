@@ -11,7 +11,7 @@ import { useRoute } from 'vue-router'
 import { createResourceController } from '../../src/resource-controller'
 
 const SlotContent = { name: 'SlotContent', template: '<div class="content">OK</div>' }
-const SPEC = { name: 'test', endpoints: { api: '/api/test', route: '/test' } }
+const SPEC = { name: 'test', route: '/test', api: () => ({}) as any }
 
 // Simulates reactive userPermissions that can be mutated at runtime
 function makePermissionsStore(initial: string[]) {
@@ -33,10 +33,10 @@ function mountWrapper(
   permsStore: ReturnType<typeof makePermissionsStore>,
   schemaPermissions: Record<string, string> = {},
 ) {
-  configureVuePrince({ baseUrl: '', userPermissions: () => permsStore.getAll() })
+  configureVuePrince({ api: { baseUrl: '' }, userPermissions: () => permsStore.getAll() })
   vi.mocked(useRoute).mockReturnValue({ meta: { spec: SPEC } } as any)
   vi.mocked(createResourceController).mockReturnValue({
-    useStore: () => makeStore(schemaPermissions),
+    store: () => makeStore(schemaPermissions),
   } as any)
   return mount(ResourcePermissionWrapper, {
     props: { action },
@@ -47,7 +47,7 @@ function mountWrapper(
 
 describe('ResourcePermissionWrapper', () => {
   beforeEach(() => {
-    configureVuePrince({ baseUrl: '' })
+    configureVuePrince({ api: { baseUrl: '' } })
   })
 
   it('renders the slot when no action is required', () => {
@@ -71,10 +71,10 @@ describe('ResourcePermissionWrapper', () => {
   })
 
   it('allows access when userPermissions is not configured', () => {
-    configureVuePrince({ baseUrl: '' })
+    configureVuePrince({ api: { baseUrl: '' } })
     vi.mocked(useRoute).mockReturnValue({ meta: { spec: SPEC } } as any)
     vi.mocked(createResourceController).mockReturnValue({
-      useStore: () => makeStore({ read: 'admin' }),
+      store: () => makeStore({ read: 'admin' }),
     } as any)
     const wrapper = mount(ResourcePermissionWrapper, {
       props: { action: 'read' },

@@ -5,6 +5,7 @@ import type { ResourceFieldDef } from '../../resource'
 import type { FieldComponentEntry } from '../../config'
 import { getConfig } from '../../config'
 import type { ResourceOption } from '../../field-props'
+import type { ResourceId } from '../../api'
 import NumberField from './NumberField.vue'
 import TextField from './TextField.vue'
 import TextAreaField from './TextAreaField.vue'
@@ -65,41 +66,26 @@ function resolveEntry(entry: FieldComponentEntry, context: FieldContext): Compon
   return entry as Component
 }
 
-async function fetchJson(url: string): Promise<Record<string, unknown>[]> {
-  const res = await fetch(url, { headers: { 'Content-Type': 'application/json' } })
-  const body = (await res.json()) as Record<string, unknown>
-  return (Array.isArray(body) ? body : ((body.data ?? []) as unknown[])) as Record<
-    string,
-    unknown
-  >[]
-}
-
 /**
  * Builds the search/title/fetchLabel props for AutocompleteFieldProps.
  * Pass the result as v-bind to any field component that handles a resource ref.
  */
 export function buildResourceFieldProps(refSpec: ResourceSpec) {
-  const baseUrl = getConfig().baseUrl
   const titleFn = refSpec.title ?? ((item: Record<string, unknown>) => String(item.id))
 
   const search = async (params: Record<string, string>): Promise<ResourceOption[]> => {
     try {
-      const qs = new URLSearchParams(params).toString()
-      const items = await fetchJson(`${baseUrl}${refSpec.endpoints.api}?${qs}`)
-      return items.map((item) => ({ id: item.id as number, label: titleFn(item) }))
+      const res = await refSpec.api().list(params)
+      return res.data.map((item) => ({ id: item.id as number, label: titleFn(item) }))
     } catch {
       return []
     }
   }
 
-  const fetchLabel = async (id: number): Promise<string> => {
+  const fetchLabel = async (id: ResourceId): Promise<string> => {
     try {
-      const res = await fetch(`${baseUrl}${refSpec.endpoints.api}/${id}`, {
-        headers: { 'Content-Type': 'application/json' },
-      })
-      const body = (await res.json()) as Record<string, unknown>
-      const item = (body.data ?? body) as Record<string, unknown>
-      return titleFn(item)
+      const res = await refSpec.api().get(id)
+      return titleFn(res.data)
     } catch {
       return String(id)
     }

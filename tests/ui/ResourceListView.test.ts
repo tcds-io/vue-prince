@@ -29,7 +29,7 @@ function mountView(overrides: Record<string, unknown> = {}) {
 }
 
 describe('ResourceListView', () => {
-  beforeEach(() => configureVuePrince({ baseUrl: '' }))
+  beforeEach(() => configureVuePrince({ api: { baseUrl: '' } }))
 
   describe('error state', () => {
     it('shows the error message', () => {
@@ -141,7 +141,7 @@ describe('ResourceListView', () => {
   describe('custom layout.table', () => {
     it('renders custom table wrapper component', () => {
       const MyTable = defineComponent({ template: '<div class="my-table"><slot/></div>' })
-      configureVuePrince({ baseUrl: '', layout: { table: MyTable } })
+      configureVuePrince({ api: { baseUrl: '' }, layout: { table: MyTable } })
       const wrapper = mountView()
       expect(wrapper.find('.my-table').exists()).toBe(true)
     })

@@ -7,7 +7,7 @@
       <span v-else class="field-value">
         {{ inputText || value }}
         <a
-          :href="router.resolve(`${props.refSpec.endpoints.route}/${value}`).href"
+          :href="router.resolve(`${props.refSpec.route}/${value}`).href"
           target="_blank"
           rel="noopener noreferrer"
           class="open-link"
