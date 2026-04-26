@@ -3,10 +3,9 @@ import { useRoute } from 'vue-router'
 import type { ResourceListItem, ResourceSchemaField } from '../api'
 import type { ResourceFieldDef, ResourceSpec } from '../resource'
 import { isResourceRef, resolveFieldType } from '../resource'
-import { createResourceApi } from '../resource-api'
 
 // Module-level cache survives component remounts (navigation away and back).
-// Keyed by refSpec.endpoints.api so two fields pointing at the same resource share entries.
+// Keyed by refSpec.name so two fields pointing at the same resource share entries.
 const globalLabelCache = ref<Record<string, Record<string, string>>>({})
 // Tracks IDs currently being fetched to prevent duplicate concurrent requests.
 const inFlightIds = new Map<string, Set<string>>()
@@ -80,7 +79,7 @@ export function useResourceLabelMap(
     for (const [fieldName, def] of Object.entries(specFields)) {
       const resolved = resolveFieldType(def.type)
       if (isResourceRef(resolved)) {
-        result[fieldName] = globalLabelCache.value[resolved.endpoints.api] ?? {}
+        result[fieldName] = globalLabelCache.value[resolved.name] ?? {}
       }
     }
     return result
@@ -99,8 +98,8 @@ export function useResourceLabelMap(
       await Promise.allSettled(
         refFields.map(async ([fieldName, def]) => {
           const refSpec = resolveFieldType(def.type) as ResourceSpec
-          const cached = globalLabelCache.value[refSpec.endpoints.api] ?? {}
-          const inflight = inFlightIds.get(refSpec.endpoints.api) ?? new Set<string>()
+          const cached = globalLabelCache.value[refSpec.name] ?? {}
+          const inflight = inFlightIds.get(refSpec.name) ?? new Set<string>()
 
           const newIds = [
             ...new Set(
@@ -111,18 +110,17 @@ export function useResourceLabelMap(
           ]
           if (!newIds.length) return
 
-          if (!inFlightIds.has(refSpec.endpoints.api))
-            inFlightIds.set(refSpec.endpoints.api, new Set())
-          const flightSet = inFlightIds.get(refSpec.endpoints.api)!
+          if (!inFlightIds.has(refSpec.name)) inFlightIds.set(refSpec.name, new Set())
+          const flightSet = inFlightIds.get(refSpec.name)!
           newIds.forEach((id) => flightSet.add(String(id)))
 
           try {
-            const res = await createResourceApi(refSpec).list({ id: newIds.join(',') })
+            const res = await refSpec.api().list({ id: newIds.join(',') })
             const titleFn = refSpec.title ?? ((item: Record<string, unknown>) => String(item.id))
             const entries = res.data.map((item) => [String(item.id), titleFn(item)])
             globalLabelCache.value = {
               ...globalLabelCache.value,
-              [refSpec.endpoints.api]: { ...cached, ...Object.fromEntries(entries) },
+              [refSpec.name]: { ...cached, ...Object.fromEntries(entries) },
             }
           } catch (err) {
             console.warn(`[vue-prince] Failed to resolve labels for "${fieldName}":`, err)

@@ -7,13 +7,14 @@ import {
 
 const userSpec = {
   name: 'user',
-  endpoints: { api: '/api/users', route: '/users' },
+  route: '/users',
+  api: () => ({}) as any,
   fields: { id: { type: 'integer' as const }, name: { type: 'string' as const } },
 }
 
 describe('useResourceTabs', () => {
   it('returns empty array when spec has no tabs', () => {
-    const spec = { name: 'product', endpoints: { api: '/products', route: '/products' } }
+    const spec = { name: 'product', route: '/products', api: () => ({}) as any }
     const { tabs } = useResourceTabs(spec)
     expect(tabs).toHaveLength(0)
   })
@@ -22,7 +23,8 @@ describe('useResourceTabs', () => {
     const component = {}
     const spec = {
       name: 'company',
-      endpoints: { api: '/companies', route: '/companies' },
+      route: '/companies',
+      api: () => ({}) as any,
       tabs: [{ component: () => component as any, label: 'Users' }],
     }
     const { tabs } = useResourceTabs(spec)
@@ -32,7 +34,8 @@ describe('useResourceTabs', () => {
   it('defaults foreignKey to parentSpec.name_id', () => {
     const spec = {
       name: 'company',
-      endpoints: { api: '/companies', route: '/companies' },
+      route: '/companies',
+      api: () => ({}) as any,
       tabs: [{ component: () => ({}) as any, label: 'Users' }],
     }
     const { tabs } = useResourceTabs(spec)
@@ -42,7 +45,8 @@ describe('useResourceTabs', () => {
   it('uses custom foreignKey from tab', () => {
     const spec = {
       name: 'company',
-      endpoints: { api: '/companies', route: '/companies' },
+      route: '/companies',
+      api: () => ({}) as any,
       tabs: [{ component: () => ({}) as any, foreignKey: 'org_id', label: 'Users' }],
     }
     const { tabs } = useResourceTabs(spec)
@@ -52,7 +56,8 @@ describe('useResourceTabs', () => {
   it('preserves tab label', () => {
     const spec = {
       name: 'company',
-      endpoints: { api: '/companies', route: '/companies' },
+      route: '/companies',
+      api: () => ({}) as any,
       tabs: [{ component: () => ({}) as any, label: 'Team Members' }],
     }
     const { tabs } = useResourceTabs(spec)
@@ -64,7 +69,8 @@ describe('useResourceTabs', () => {
     const c2 = {} as any
     const spec = {
       name: 'company',
-      endpoints: { api: '/companies', route: '/companies' },
+      route: '/companies',
+      api: () => ({}) as any,
       tabs: [
         { component: () => c1, label: 'Users' },
         { component: () => c2, label: 'Orders', foreignKey: 'customer_id' },

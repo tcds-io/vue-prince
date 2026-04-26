@@ -28,9 +28,9 @@ import { useResourceSchema, useResourceLabels } from './use-resource-meta'
 
 const route = useRoute()
 const router = useRouter()
-const store = createResourceController(route.meta.spec!).useStore()
+const store = createResourceController(route.meta.spec!).store()
 
-const segment = computed(() => route.meta.spec?.endpoints.route.split('/').pop())
+const segment = computed(() => route.meta.spec?.route.split('/').pop())
 
 const initialItem = computed(() => {
   const fields = route.meta.spec?.fields

@@ -49,7 +49,6 @@ import { useRouter } from 'vue-router'
 import type { ResourceListItem, ResourceListMetadata, ResourceSchemaField } from '../api'
 import type { ResourceSpec } from '../resource'
 import { hasPermission, isResourceRef, resolveFieldType } from '../resource'
-import { createResourceApi } from '../resource-api'
 import { createResourceController } from '../resource-controller'
 import ResourceListView from '../ui/ResourceListView.vue'
 import PrinceButton from '../ui/PrinceButton.vue'
@@ -58,7 +57,7 @@ import type { TabComponentProps } from './use-resource-tabs'
 const props = defineProps<TabComponentProps & { spec: ResourceSpec }>()
 
 const router = useRouter()
-const specStore = computed(() => createResourceController(props.spec).useStore())
+const specStore = computed(() => createResourceController(props.spec).store())
 
 const items = ref<ResourceListItem<Record<string, unknown>>[]>([])
 const loading = ref(false)
@@ -88,7 +87,7 @@ async function fetchItems(parentId: string | number, pg: number) {
   loading.value = true
   error.value = null
   try {
-    const res = await createResourceApi(props.spec).list({
+    const res = await props.spec.api().list({
       [props.foreignKey]: String(parentId),
       page: String(pg),
     })
@@ -119,7 +118,7 @@ function goToPage(p: number) {
 }
 
 function openInNewTab(row: { id: string | number }) {
-  const segment = props.spec.endpoints.route.split('/').pop()
+  const segment = props.spec.route.split('/').pop()
   const resolved = router.resolve({ name: `${segment}-detail`, params: { id: row.id } })
   window.open(resolved.href, '_blank')
 }
@@ -131,7 +130,7 @@ const resourceLabel = computed(() => {
 })
 
 function createNew() {
-  const segment = props.spec.endpoints.route.split('/').pop()
+  const segment = props.spec.route.split('/').pop()
   router.push({
     name: `${segment}-create`,
     query: props.resourceId != null ? { [props.foreignKey]: String(props.resourceId) } : {},

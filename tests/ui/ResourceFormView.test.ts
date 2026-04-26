@@ -32,7 +32,7 @@ function mountForm(overrides: Record<string, unknown> = {}) {
 }
 
 describe('ResourceFormView', () => {
-  beforeEach(() => configureVuePrince({ baseUrl: '' }))
+  beforeEach(() => configureVuePrince({ api: { baseUrl: '' } }))
 
   describe('loading state', () => {
     it('shows Loading… text', () => {

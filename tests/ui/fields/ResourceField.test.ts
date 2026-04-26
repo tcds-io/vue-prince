@@ -9,7 +9,7 @@ vi.mock('vue-router', () => ({
   RouterLink: { name: 'RouterLink', props: ['to'], template: '<a :href="to"><slot /></a>' },
 }))
 
-const refSpec: ResourceSpec = { name: 'user', endpoints: { api: '/api/users', route: '/users' } }
+const refSpec: ResourceSpec = { name: 'user', route: '/users', api: () => ({}) as any }
 
 function makeMockSearch(results = [{ id: 1, label: 'Alice' }]) {
   return vi.fn().mockResolvedValue(results)
@@ -63,7 +63,7 @@ describe('ResourceField', () => {
       const wrapper = mountField('LIST', 42)
       const link = wrapper.find('a.open-link')
       expect(link.exists()).toBe(true)
-      expect(link.attributes('href')).toBe('/users/42') // endpoints.route + '/' + value
+      expect(link.attributes('href')).toBe('/users/42') // route + '/' + value
       expect(link.attributes('target')).toBe('_blank')
     })
 

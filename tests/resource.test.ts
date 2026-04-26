@@ -1,12 +1,12 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import type { InferResourceListModel, InferResourceModel, ResourceSpec } from '../src'
-import { defineResource, isResourceRef } from '../src'
+import { createResourceApi, defineResource, isResourceRef } from '../src'
 
-const endpoints = { api: '/api/users', route: '/users' }
+const mockApi = () => createResourceApi({ path: '/api/users' })
 
 describe('isResourceRef', () => {
   it('identifies a resource spec', () => {
-    const spec: ResourceSpec = { name: 'user', endpoints }
+    const spec: ResourceSpec = { name: 'user', route: '/users', api: mockApi }
     expect(isResourceRef(spec)).toBe(true)
   })
 
@@ -15,12 +15,12 @@ describe('isResourceRef', () => {
     expect(isResourceRef('integer')).toBe(false)
   })
 
-  it('rejects objects missing endpoints', () => {
+  it('rejects objects missing route and api', () => {
     expect(isResourceRef({ name: 'user' })).toBe(false)
   })
 
   it('rejects objects missing name', () => {
-    expect(isResourceRef({ endpoints })).toBe(false)
+    expect(isResourceRef({ route: '/users', api: mockApi })).toBe(false)
   })
 
   it('rejects null', () => {
@@ -37,12 +37,13 @@ describe('isResourceRef', () => {
 })
 
 describe('defineResource', () => {
-  const companyEndpoints = { api: '/api/companies', route: '/companies' }
+  const companyApi = () => createResourceApi({ path: '/api/companies' })
 
   it('returns the spec unchanged', () => {
     const spec = {
       name: 'company',
-      endpoints: companyEndpoints,
+      route: '/companies',
+      api: companyApi,
       fields: {
         id: { type: 'integer' as const },
         name: { type: 'string' as const },
@@ -52,15 +53,16 @@ describe('defineResource', () => {
   })
 
   it('works without fields', () => {
-    const result = defineResource({ name: 'company', endpoints: companyEndpoints })
+    const result = defineResource({ name: 'company', route: '/companies', api: companyApi })
     expect(result.name).toBe('company')
-    expect(result.endpoints).toEqual(companyEndpoints)
+    expect(result.route).toBe('/companies')
+    expect(result.api).toBe(companyApi)
     expect(result.fields).toBeUndefined()
   })
 
   it('preserves the title function', () => {
     const title = (item: any) => item.name
-    const result = defineResource({ name: 'company', endpoints: companyEndpoints, title })
+    const result = defineResource({ name: 'company', route: '/companies', api: companyApi, title })
     expect(result.title).toBe(title)
   })
 
@@ -68,7 +70,8 @@ describe('defineResource', () => {
     const MyList = {}
     const result = defineResource({
       name: 'company',
-      endpoints: companyEndpoints,
+      route: '/companies',
+      api: companyApi,
       components: { list: MyList as any },
     })
     expect(result.components?.list).toBe(MyList)
@@ -78,7 +81,8 @@ describe('defineResource', () => {
     // Would be a compile error if item.name were not string (.toUpperCase is string-only)
     defineResource({
       name: 'user',
-      endpoints: { api: '/users', route: '/users' },
+      route: '/users',
+      api: mockApi,
       fields: {
         name: { type: 'string' as const },
         age: { type: 'integer' as const },
@@ -91,7 +95,8 @@ describe('defineResource', () => {
     // Each method only exists on the expected primitive type
     defineResource({
       name: 'user',
-      endpoints: { api: '/users', route: '/users' },
+      route: '/users',
+      api: mockApi,
       fields: {
         name: { type: 'string' as const, list: { formatter: (v) => v.toUpperCase() } },
         age: { type: 'integer' as const, list: { formatter: (v) => v.toFixed(2) } },
@@ -103,7 +108,8 @@ describe('defineResource', () => {
   it('infers form formatter value type from field type', () => {
     defineResource({
       name: 'user',
-      endpoints: { api: '/users', route: '/users' },
+      route: '/users',
+      api: mockApi,
       fields: {
         name: { type: 'string' as const, form: { formatter: (v) => v.toUpperCase() } },
         age: { type: 'integer' as const, form: { formatter: (v) => v.toFixed(2) } },
@@ -114,11 +120,13 @@ describe('defineResource', () => {
   it('infers resource-ref formatter value type as number', () => {
     const otherSpec: ResourceSpec = {
       name: 'company',
-      endpoints: { api: '/companies', route: '/companies' },
+      route: '/companies',
+      api: companyApi,
     }
     defineResource({
       name: 'user',
-      endpoints: { api: '/users', route: '/users' },
+      route: '/users',
+      api: mockApi,
       fields: {
         company_id: { type: () => otherSpec, list: { formatter: (v) => v.toFixed(0) } },
       },
@@ -126,10 +134,11 @@ describe('defineResource', () => {
   })
 
   it('accepts resource-ref fields', () => {
-    const userSpec: ResourceSpec = { name: 'user', endpoints }
+    const userSpec: ResourceSpec = { name: 'user', route: '/users', api: mockApi }
     const result = defineResource({
       name: 'company',
-      endpoints: companyEndpoints,
+      route: '/companies',
+      api: companyApi,
       fields: { owner_id: { type: () => userSpec } },
     })
     const typeRef = result.fields?.owner_id.type
@@ -141,7 +150,8 @@ describe('defineResource', () => {
 describe('InferResourceModel', () => {
   const _userSpec = defineResource({
     name: 'user',
-    endpoints: { api: '/api/users', route: '/users' },
+    route: '/users',
+    api: mockApi,
     fields: {
       id: { type: 'integer' as const },
       name: { type: 'string' as const },
@@ -191,11 +201,13 @@ describe('InferResourceModel', () => {
   it('infers resource-ref fields as number', () => {
     const _companySpec: ResourceSpec = {
       name: 'company',
-      endpoints: { api: '/api/companies', route: '/companies' },
+      route: '/companies',
+      api: () => createResourceApi({ path: '/api/companies' }),
     }
     const _spec = defineResource({
       name: 'user',
-      endpoints: { api: '/api/users', route: '/users' },
+      route: '/users',
+      api: mockApi,
       fields: { company_id: { type: () => _companySpec } },
     })
     type M = InferResourceModel<typeof _spec>
@@ -205,7 +217,8 @@ describe('InferResourceModel', () => {
   it('falls back to Record<string, unknown> when no fields defined', () => {
     const _spec = defineResource({
       name: 'user',
-      endpoints: { api: '/api/users', route: '/users' },
+      route: '/users',
+      api: mockApi,
     })
     type M = InferResourceModel<typeof _spec>
     expectTypeOf<M>().toEqualTypeOf<Record<string, unknown>>()
@@ -215,7 +228,8 @@ describe('InferResourceModel', () => {
 describe('InferResourceListModel', () => {
   const _spec = defineResource({
     name: 'user',
-    endpoints: { api: '/api/users', route: '/users' },
+    route: '/users',
+    api: mockApi,
     fields: {
       id: { type: 'integer' as const },
       name: { type: 'string' as const },
@@ -233,7 +247,8 @@ describe('InferResourceListModel', () => {
   it('falls back to Record<string, unknown> when no fields defined', () => {
     const _noFieldSpec = defineResource({
       name: 'user',
-      endpoints: { api: '/api/users', route: '/users' },
+      route: '/users',
+      api: mockApi,
     })
     type M = InferResourceListModel<typeof _noFieldSpec>
     expectTypeOf<M>().toEqualTypeOf<Record<string, unknown>>()

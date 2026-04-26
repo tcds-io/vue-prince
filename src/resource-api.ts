@@ -1,35 +1,30 @@
-import type { ResourceId, ResourceListResponse, ResourceResponse, ResourceSchemaField } from './api'
-import type { InferResourceModel, ResourceSpec } from './resource'
+import { toValue } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
+import type {
+  ResourceApi,
+  ResourceListResponse,
+  ResourceResponse,
+  ResourceSchemaField,
+} from './api'
 import { getConfig } from './config'
 
-export type ResourceSchemaResponse = {
-  fields: ResourceSchemaField[]
-  permissions: Record<string, string>
-}
-
-export type ResourceApi<Model extends object> = {
-  schema(): Promise<ResourceSchemaResponse>
-  list(params?: Record<string, string | number | boolean>): Promise<ResourceListResponse<Model>>
-  get(id: ResourceId): Promise<ResourceResponse<Model>>
-  create(data: Partial<Model>): Promise<ResourceResponse<Model>>
-  update(id: ResourceId, data: Partial<Model>): Promise<ResourceResponse<Model> | null>
-  remove(id: ResourceId): Promise<void>
-  createMany(data: Partial<Model>[]): Promise<ResourceResponse<Model>[]>
-  updateMany(data: (Partial<Model> & { id: ResourceId })[]): Promise<void>
-  deleteMany(ids: ResourceId[]): Promise<void>
-}
-
-export function createResourceApi<const S extends ResourceSpec>(
-  spec: S,
-): ResourceApi<InferResourceModel<S>> {
-  type Model = InferResourceModel<S>
-
-  const headers = { 'Content-Type': 'application/json', Accept: 'application/json' }
+export function createResourceApi(options: {
+  path: string
+  baseUrl?: string
+  headers?: MaybeRefOrGetter<Record<string, string>>
+}): ResourceApi {
+  const defaultHeaders = { 'Content-Type': 'application/json', Accept: 'application/json' }
+  // Evaluated on every request so reactive refs and getter functions always return fresh values.
+  const getHeaders = () => ({
+    ...defaultHeaders,
+    ...toValue(options.headers ?? getConfig().api.headers ?? {}),
+  })
+  const getBase = () => options.baseUrl ?? getConfig().api.baseUrl
 
   return {
     async schema() {
-      const response = await fetch(`${getConfig().baseUrl}${spec.endpoints.api}/_schema`, {
-        headers,
+      const response = await fetch(`${getBase()}${options.path}/_schema`, {
+        headers: getHeaders(),
       })
       const body = (await response.json()) as {
         schema: ResourceSchemaField[]
@@ -42,76 +37,78 @@ export function createResourceApi<const S extends ResourceSpec>(
     },
 
     async list(params) {
-      const url = new URL(spec.endpoints.api, getConfig().baseUrl)
+      const url = new URL(options.path, getBase())
 
       if (params) {
         Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, String(v)))
       }
 
-      const response = await fetch(url, { headers })
+      const response = await fetch(url, { headers: getHeaders() })
 
-      return (await response.json()) as Promise<ResourceListResponse<Model>>
+      return (await response.json()) as Promise<ResourceListResponse<Record<string, unknown>>>
     },
 
     async get(id) {
-      const response = await fetch(`${getConfig().baseUrl}${spec.endpoints.api}/${id}`, { headers })
+      const response = await fetch(`${getBase()}${options.path}/${id}`, {
+        headers: getHeaders(),
+      })
 
-      return (await response.json()) as Promise<ResourceResponse<Model>>
+      return (await response.json()) as Promise<ResourceResponse<Record<string, unknown>>>
     },
 
     async create(data) {
-      const response = await fetch(`${getConfig().baseUrl}${spec.endpoints.api}`, {
+      const response = await fetch(`${getBase()}${options.path}`, {
         method: 'POST',
-        headers,
+        headers: getHeaders(),
         body: JSON.stringify(data),
       })
 
       const body = await response.json()
       // Support both enveloped { data, meta } and bare { id, ... } responses
-      return ('data' in body ? body : { data: body }) as ResourceResponse<Model>
+      return ('data' in body ? body : { data: body }) as ResourceResponse<Record<string, unknown>>
     },
 
     async update(id, data) {
-      const response = await fetch(`${getConfig().baseUrl}${spec.endpoints.api}/${id}`, {
+      const response = await fetch(`${getBase()}${options.path}/${id}`, {
         method: 'PATCH',
-        headers,
+        headers: getHeaders(),
         body: JSON.stringify(data),
       })
 
       if (response.status === 204) return null
-      return (await response.json()) as Promise<ResourceResponse<Model>>
+      return (await response.json()) as Promise<ResourceResponse<Record<string, unknown>>>
     },
 
     async remove(id) {
-      await fetch(`${getConfig().baseUrl}${spec.endpoints.api}/${id}`, {
+      await fetch(`${getBase()}${options.path}/${id}`, {
         method: 'DELETE',
-        headers,
+        headers: getHeaders(),
       })
     },
 
     async createMany(data) {
-      const response = await fetch(`${getConfig().baseUrl}${spec.endpoints.api}`, {
+      const response = await fetch(`${getBase()}${options.path}`, {
         method: 'POST',
-        headers,
+        headers: getHeaders(),
         body: JSON.stringify({ data }),
       })
       const body = await response.json()
       // Support { data: [...] } envelope or bare array
-      return (Array.isArray(body) ? body : body.data) as ResourceResponse<Model>[]
+      return (Array.isArray(body) ? body : body.data) as ResourceResponse<Record<string, unknown>>[]
     },
 
     async updateMany(data) {
-      await fetch(`${getConfig().baseUrl}${spec.endpoints.api}`, {
+      await fetch(`${getBase()}${options.path}`, {
         method: 'PATCH',
-        headers,
+        headers: getHeaders(),
         body: JSON.stringify({ data }),
       })
     },
 
     async deleteMany(ids) {
-      await fetch(`${getConfig().baseUrl}${spec.endpoints.api}`, {
+      await fetch(`${getBase()}${options.path}`, {
         method: 'DELETE',
-        headers,
+        headers: getHeaders(),
         body: JSON.stringify({ data: ids }),
       })
     },

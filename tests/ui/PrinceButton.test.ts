@@ -6,7 +6,7 @@ import { configureVuePrince } from '../../src/config'
 import type { PrinceButtonType } from '../../src/button-props'
 
 describe('PrinceButton', () => {
-  beforeEach(() => configureVuePrince({ baseUrl: '' }))
+  beforeEach(() => configureVuePrince({ api: { baseUrl: '' } }))
 
   describe('native button type', () => {
     it('Submit renders type="submit"', () => {
@@ -86,7 +86,7 @@ describe('PrinceButton', () => {
   describe('custom button component', () => {
     it('renders the configured custom component instead of <button>', () => {
       const MyBtn = defineComponent({ template: '<span class="custom-btn" />' })
-      configureVuePrince({ baseUrl: '', buttons: { Submit: MyBtn } })
+      configureVuePrince({ api: { baseUrl: '' }, buttons: { Submit: MyBtn } })
       const wrapper = mount(PrinceButton, { props: { type: 'Submit' } })
       expect(wrapper.find('.custom-btn').exists()).toBe(true)
       expect(wrapper.find('button.prince-btn').exists()).toBe(false)
@@ -94,28 +94,28 @@ describe('PrinceButton', () => {
 
     it('passes type (native HTML type) to custom component', () => {
       const MyBtn = defineComponent({ props: ['type'], template: '<span />' })
-      configureVuePrince({ baseUrl: '', buttons: { Submit: MyBtn } })
+      configureVuePrince({ api: { baseUrl: '' }, buttons: { Submit: MyBtn } })
       const wrapper = mount(PrinceButton, { props: { type: 'Submit' } })
       expect(wrapper.findComponent(MyBtn).props('type')).toBe('submit')
     })
 
     it('passes label to custom component', () => {
       const MyBtn = defineComponent({ props: ['label'], template: '<span />' })
-      configureVuePrince({ baseUrl: '', buttons: { Back: MyBtn } })
+      configureVuePrince({ api: { baseUrl: '' }, buttons: { Back: MyBtn } })
       const wrapper = mount(PrinceButton, { props: { type: 'Back' } })
       expect(wrapper.findComponent(MyBtn).props('label')).toBe('Back')
     })
 
     it('passes variant to custom component', () => {
       const MyBtn = defineComponent({ props: ['variant'], template: '<span />' })
-      configureVuePrince({ baseUrl: '', buttons: { Delete: MyBtn } })
+      configureVuePrince({ api: { baseUrl: '' }, buttons: { Delete: MyBtn } })
       const wrapper = mount(PrinceButton, { props: { type: 'Delete' } })
       expect(wrapper.findComponent(MyBtn).props('variant')).toBe('danger')
     })
 
     it('passes princeType to custom component', () => {
       const MyBtn = defineComponent({ props: ['princeType'], template: '<span />' })
-      configureVuePrince({ baseUrl: '', buttons: { Edit: MyBtn } })
+      configureVuePrince({ api: { baseUrl: '' }, buttons: { Edit: MyBtn } })
       const wrapper = mount(PrinceButton, { props: { type: 'Edit' } })
       expect(wrapper.findComponent(MyBtn).props('princeType')).toBe('Edit')
     })

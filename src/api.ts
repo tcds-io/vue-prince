@@ -1,4 +1,21 @@
 export type ResourceId = number | string
+
+export type ResourceSchemaResponse = {
+  fields: ResourceSchemaField[]
+  permissions: Record<string, string>
+}
+
+export type ResourceApi<Model extends object = Record<string, unknown>> = {
+  schema(): Promise<ResourceSchemaResponse>
+  list(params?: Record<string, string | number | boolean>): Promise<ResourceListResponse<Model>>
+  get(id: ResourceId): Promise<ResourceResponse<Model>>
+  create(data: Partial<Model>): Promise<ResourceResponse<Model>>
+  update(id: ResourceId, data: Partial<Model>): Promise<ResourceResponse<Model> | null>
+  remove(id: ResourceId): Promise<void>
+  createMany(data: Partial<Model>[]): Promise<ResourceResponse<Model>[]>
+  updateMany(data: (Partial<Model> & { id: ResourceId })[]): Promise<void>
+  deleteMany(ids: ResourceId[]): Promise<void>
+}
 export type ResourceFieldType = 'integer' | 'number' | 'text' | 'datetime' | 'enum' | (string & {})
 export type ResourceSchemaField = { name: string; type: ResourceFieldType; values?: string[] }
 export type ResourceMetadata = {

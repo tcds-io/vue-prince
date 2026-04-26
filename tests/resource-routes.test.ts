@@ -4,19 +4,20 @@ import type { ResourceSpec } from '../src'
 
 const spec: ResourceSpec = {
   name: 'company',
-  endpoints: { api: '/api/companies', route: '/companies' },
+  route: '/companies',
+  api: () => ({}) as any,
 }
 
 describe('createResourceRoutes', () => {
   beforeEach(() => {
-    configureVuePrince({ baseUrl: '' })
+    configureVuePrince({ api: { baseUrl: '' } })
   })
 
   it('generates exactly 5 routes', () => {
     expect(createResourceRoutes(spec)).toHaveLength(5)
   })
 
-  it('derives paths from endpoints.route', () => {
+  it('derives paths from route', () => {
     const routes = createResourceRoutes(spec)
     const paths = routes.map((r) => r.path)
     expect(paths[0]).toBe('companies')
@@ -48,7 +49,8 @@ describe('createResourceRoutes', () => {
   it('works with nested route paths', () => {
     const nested: ResourceSpec = {
       name: 'product',
-      endpoints: { api: '/api/v2/backoffice/products', route: '/admin/products' },
+      route: '/admin/products',
+      api: () => ({}) as any,
     }
     const routes = createResourceRoutes(nested)
     expect(routes[0].path).toBe('admin/products')
@@ -60,7 +62,7 @@ describe('createResourceRoutes', () => {
   })
 
   it('always registers all 5 routes regardless of userPermissions', () => {
-    configureVuePrince({ baseUrl: '', userPermissions: () => [] })
+    configureVuePrince({ api: { baseUrl: '' }, userPermissions: () => [] })
     expect(createResourceRoutes(spec)).toHaveLength(5)
   })
 })

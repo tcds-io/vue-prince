@@ -89,9 +89,9 @@ import { useResourceLabels, useResourceLabelMap, useResourceSchema } from './use
 
 const route = useRoute()
 const router = useRouter()
-const store = createResourceController(route.meta.spec!).useStore()
+const store = createResourceController(route.meta.spec!).store()
 
-const segment = computed(() => route.meta.spec?.endpoints.route.split('/').pop())
+const segment = computed(() => route.meta.spec?.route.split('/').pop())
 function pluralize(word: string): string {
   if (/[^aeiou]y$/i.test(word)) return word.slice(0, -1) + 'ies'
   if (/(s|sh|ch|x|z)$/i.test(word)) return word + 'es'

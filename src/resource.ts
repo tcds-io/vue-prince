@@ -1,5 +1,6 @@
 import type { Component } from 'vue'
 import { getConfig } from './config'
+import type { ResourceApi } from './api'
 
 export type SpecFieldType =
   | 'integer'
@@ -52,7 +53,9 @@ export type ResourceFieldDef = {
 }
 
 export function isResourceRef(type: unknown): type is ResourceSpec {
-  return typeof type === 'object' && type !== null && 'endpoints' in type && 'name' in type
+  return (
+    typeof type === 'object' && type !== null && 'route' in type && 'api' in type && 'name' in type
+  )
 }
 
 export function resolveFieldType(type: ResourceFieldDef['type']): SpecFieldType | ResourceSpec {
@@ -106,7 +109,8 @@ export type ResourcePageComponents = {
 
 export type ResourceSpec<T = Record<string, unknown>> = {
   name: string
-  endpoints: { api: string; route: string }
+  route: string
+  api: () => ResourceApi
   fields?: Record<string, ResourceFieldDef>
   title?: (item: T) => string
   components?: ResourcePageComponents
@@ -171,9 +175,13 @@ export function defineResource<
 ): Omit<ResourceSpec, 'fields' | 'title'> & {
   fields?: { [K in keyof F]: Omit<ResourceFieldDef, 'type'> & { type: F[K] } }
   title?: (item: Record<string, unknown>) => string
+  route: string
+  api: () => ResourceApi
 } {
   return spec as Omit<ResourceSpec, 'fields' | 'title'> & {
     fields?: { [K in keyof F]: Omit<ResourceFieldDef, 'type'> & { type: F[K] } }
     title?: (item: Record<string, unknown>) => string
+    route: string
+    api: () => ResourceApi
   }
 }

@@ -36,7 +36,8 @@ const CustomEdit = defineComponent({ name: 'CustomEdit', template: '<div />' })
 
 const BASE_SPEC = {
   name: 'company',
-  endpoints: { api: '/api/companies', route: '/companies' },
+  route: '/companies',
+  api: () => ({}) as any,
   fields: { name: { type: 'string' as const } },
 }
 
@@ -45,11 +46,11 @@ describe('ResourceEditPage', () => {
   let mockPush: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
-    configureVuePrince({ baseUrl: '' })
+    configureVuePrince({ api: { baseUrl: '' } })
     store = makeStore()
     mockPush = vi.fn()
     vi.mocked(useRouter).mockReturnValue({ push: mockPush } as any)
-    vi.mocked(createResourceController).mockReturnValue({ useStore: () => store } as any)
+    vi.mocked(createResourceController).mockReturnValue({ store: () => store, api: {} } as any)
   })
 
   function mountPage(spec: any = BASE_SPEC, id = '1') {
@@ -69,7 +70,7 @@ describe('ResourceEditPage', () => {
     })
 
     it('calls fetchSchema when spec has no fields', async () => {
-      mountPage({ name: 'company', endpoints: { api: '/api/companies', route: '/companies' } })
+      mountPage({ name: 'company', route: '/companies', api: () => ({}) as any })
       await flushPromises()
       expect(store.fetchSchema).toHaveBeenCalled()
     })

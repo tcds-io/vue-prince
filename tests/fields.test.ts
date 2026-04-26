@@ -129,7 +129,7 @@ describe('defaultFieldComponents', () => {
 })
 
 describe('resolveFieldComponent', () => {
-  beforeEach(() => configureVuePrince({ baseUrl: '' }))
+  beforeEach(() => configureVuePrince({ api: { baseUrl: '' } }))
 
   it('returns the default component for each built-in type', () => {
     expect(resolveFieldComponent('integer')).toBe(NumberField)
@@ -145,13 +145,13 @@ describe('resolveFieldComponent', () => {
   })
 
   it('returns ResourceField for a resource-ref type', () => {
-    const refSpec = { name: 'user', endpoints: { api: '/api/users', route: '/users' } }
+    const refSpec = { name: 'user', route: '/users', api: () => ({}) as any }
     expect(resolveFieldComponent(() => refSpec)).toBe(ResourceField)
   })
 
   it('uses a custom component registered in config', () => {
     const MyField = {}
-    configureVuePrince({ baseUrl: '', fields: { string: MyField as any } })
+    configureVuePrince({ api: { baseUrl: '' }, fields: { string: MyField as any } })
     expect(resolveFieldComponent('string')).toBe(MyField)
   })
 
@@ -159,7 +159,7 @@ describe('resolveFieldComponent', () => {
     const FormComp = {}
     const DisplayComp = {}
     configureVuePrince({
-      baseUrl: '',
+      api: { baseUrl: '' },
       fields: { datetime: { form: FormComp as any, display: DisplayComp as any } },
     })
     expect(resolveFieldComponent('datetime', 'form')).toBe(FormComp)
@@ -168,23 +168,39 @@ describe('resolveFieldComponent', () => {
 
   it('falls back to the other context when one is missing from a split entry', () => {
     const DisplayOnly = {}
-    configureVuePrince({ baseUrl: '', fields: { string: { display: DisplayOnly as any } } })
+    configureVuePrince({
+      api: { baseUrl: '' },
+      fields: { string: { display: DisplayOnly as any } },
+    })
     expect(resolveFieldComponent('string', 'form')).toBe(DisplayOnly)
   })
 
   it('uses a custom resource component when registered', () => {
     const MyResourceField = {}
-    configureVuePrince({ baseUrl: '', fields: { resource: MyResourceField as any } })
-    const refSpec = { name: 'user', endpoints: { api: '/api/users', route: '/users' } }
+    configureVuePrince({ api: { baseUrl: '' }, fields: { resource: MyResourceField as any } })
+    const refSpec = { name: 'user', route: '/users', api: () => ({}) as any }
     expect(resolveFieldComponent(() => refSpec)).toBe(MyResourceField)
   })
 })
 
 describe('buildResourceFieldProps', () => {
-  beforeEach(() => configureVuePrince({ baseUrl: 'https://api.example.com' }))
+  beforeEach(() => configureVuePrince({ api: { baseUrl: 'https://api.example.com' } }))
+
+  function makeRefSpec(overrides: Record<string, any> = {}) {
+    const mockList = vi.fn().mockResolvedValue({ data: [], meta: {} })
+    const mockGet = vi.fn().mockResolvedValue({ data: { id: 0 }, meta: {} })
+    return {
+      name: 'user',
+      route: '/users',
+      api: () => ({ list: mockList, get: mockGet }) as any,
+      _mockList: mockList,
+      _mockGet: mockGet,
+      ...overrides,
+    }
+  }
 
   it('returns refSpec, search, fetchLabel, and title', () => {
-    const refSpec = { name: 'user', endpoints: { api: '/api/users', route: '/users' } }
+    const refSpec = makeRefSpec()
     const props = buildResourceFieldProps(refSpec)
     expect(props.refSpec).toBe(refSpec)
     expect(typeof props.search).toBe('function')
@@ -192,81 +208,55 @@ describe('buildResourceFieldProps', () => {
     expect(typeof props.title).toBe('function')
   })
 
-  it('search calls the resource path with params', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      json: () => Promise.resolve([{ id: 1, name: 'Alice' }]),
+  it('search calls api.list with params and maps results', async () => {
+    const mockList = vi.fn().mockResolvedValue({
+      data: [{ id: 1, name: 'Alice', _resource: 'user' }],
+      meta: {},
     })
     const refSpec = {
       name: 'user',
-      endpoints: { api: '/api/users', route: '/users' },
+      route: '/users',
+      api: () => ({ list: mockList }) as any,
       title: (u: any) => u.name,
     }
     const { search } = buildResourceFieldProps(refSpec)
     const results = await search({ search: 'ali' })
-    const url = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0][0] as string
-    expect(url).toContain('/api/users')
-    expect(url).toContain('search=ali')
+    expect(mockList).toHaveBeenCalledWith({ search: 'ali' })
     expect(results).toEqual([{ id: 1, label: 'Alice' }])
   })
 
-  it('search handles enveloped { data: [] } responses', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      json: () => Promise.resolve({ data: [{ id: 2, name: 'Bob' }] }),
-    })
+  it('search returns [] on error', async () => {
+    const mockList = vi.fn().mockRejectedValue(new Error('Network'))
     const refSpec = {
       name: 'user',
-      endpoints: { api: '/api/users', route: '/users' },
-      title: (u: any) => u.name,
+      route: '/users',
+      api: () => ({ list: mockList }) as any,
     }
-    const { search } = buildResourceFieldProps(refSpec)
-    const results = await search({ search: 'bo' })
-    expect(results).toEqual([{ id: 2, label: 'Bob' }])
-  })
-
-  it('search returns [] on network error', async () => {
-    global.fetch = vi.fn().mockRejectedValue(new Error('Network'))
-    const refSpec = { name: 'user', endpoints: { api: '/api/users', route: '/users' } }
     const { search } = buildResourceFieldProps(refSpec)
     const results = await search({ search: 'bo' })
     expect(results).toEqual([])
   })
 
-  it('fetchLabel GETs /{id} and returns the title', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      json: () => Promise.resolve({ data: { id: 1, name: 'Alice' } }),
-    })
+  it('fetchLabel calls api.get with id and returns the title', async () => {
+    const mockGet = vi.fn().mockResolvedValue({ data: { id: 1, name: 'Alice' }, meta: {} })
     const refSpec = {
       name: 'user',
-      endpoints: { api: '/api/users', route: '/users' },
+      route: '/users',
+      api: () => ({ get: mockGet }) as any,
       title: (u: any) => u.name,
     }
     const { fetchLabel } = buildResourceFieldProps(refSpec)
     const label = await fetchLabel(1)
     expect(label).toBe('Alice')
-    expect(global.fetch).toHaveBeenCalledWith(
-      'https://api.example.com/api/users/1',
-      expect.any(Object),
-    )
-  })
-
-  it('fetchLabel handles bare (non-enveloped) responses', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      json: () => Promise.resolve({ id: 1, name: 'Alice' }),
-    })
-    const refSpec = {
-      name: 'user',
-      endpoints: { api: '/api/users', route: '/users' },
-      title: (u: any) => u.name,
-    }
-    const { fetchLabel } = buildResourceFieldProps(refSpec)
-    expect(await fetchLabel(1)).toBe('Alice')
+    expect(mockGet).toHaveBeenCalledWith(1)
   })
 
   it('fetchLabel falls back to String(id) on error', async () => {
-    global.fetch = vi.fn().mockRejectedValue(new Error('Network'))
+    const mockGet = vi.fn().mockRejectedValue(new Error('Network'))
     const { fetchLabel } = buildResourceFieldProps({
       name: 'user',
-      endpoints: { api: '/api/users', route: '/users' },
+      route: '/users',
+      api: () => ({ get: mockGet }) as any,
     })
     expect(await fetchLabel(42)).toBe('42')
   })
@@ -274,7 +264,8 @@ describe('buildResourceFieldProps', () => {
   it('title defaults to String(item.id) when spec has no title', () => {
     const { title } = buildResourceFieldProps({
       name: 'user',
-      endpoints: { api: '/api/users', route: '/users' },
+      route: '/users',
+      api: () => ({}) as any,
     })
     expect(title({ id: 99 })).toBe('99')
   })

@@ -36,7 +36,8 @@ const CustomList = defineComponent({ name: 'CustomList', template: '<div />' })
 
 const BASE_SPEC = {
   name: 'company',
-  endpoints: { api: '/api/companies', route: '/companies' },
+  route: '/companies',
+  api: () => ({}) as any,
   fields: { id: { type: 'integer' as const }, name: { type: 'string' as const } },
 }
 
@@ -45,11 +46,11 @@ describe('ResourceListPage', () => {
   let mockPush: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
-    configureVuePrince({ baseUrl: '' })
+    configureVuePrince({ api: { baseUrl: '' } })
     store = makeStore()
     mockPush = vi.fn()
     vi.mocked(useRouter).mockReturnValue({ push: mockPush } as any)
-    vi.mocked(createResourceController).mockReturnValue({ useStore: () => store } as any)
+    vi.mocked(createResourceController).mockReturnValue({ store: () => store, api: {} } as any)
   })
 
   // PrinceCard is a wrapper in the list page — give its stub a slot so
@@ -87,7 +88,7 @@ describe('ResourceListPage', () => {
     })
 
     it('calls fetchSchema when spec has no fields', async () => {
-      mountPage({ name: 'company', endpoints: { api: '/api/companies', route: '/companies' } })
+      mountPage({ name: 'company', route: '/companies', api: () => ({}) as any })
       await flushPromises()
       expect(store.fetchSchema).toHaveBeenCalled()
     })

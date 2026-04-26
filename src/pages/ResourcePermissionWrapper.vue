@@ -14,7 +14,7 @@ const props = defineProps<{ action?: string }>()
 
 const route = useRoute()
 const spec = route.meta.spec
-const store = spec ? createResourceController(spec).useStore() : null
+const store = spec ? createResourceController(spec).store() : null
 
 onMounted(() => {
   store?.fetchSchema()
