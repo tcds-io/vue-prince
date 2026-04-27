@@ -20,8 +20,6 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
   const useStore = defineStore(`resource:${spec.route}`, () => {
     const items = ref<ResourceListItem<ListModel>[]>([])
     const itemsMeta = ref<ResourceListMetadata | null>(null)
-    const item = ref<Model | null>(null)
-    const itemMeta = ref<ResourceMetadata | null>(null)
     const schemaFields = ref<ResourceSchemaField[]>([])
     const schemaPermissions = ref<Record<string, string>>({})
     const schemaLoaded = ref(false)
@@ -69,7 +67,7 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
       }
     }
 
-    async function get(id: ResourceId) {
+    async function get(id: ResourceId): Promise<{ data: Model; meta: ResourceMetadata } | null> {
       await fetchSchema()
       loading.value = true
       error.value = null
@@ -77,16 +75,16 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
         if (!hasPermission(schemaPermissions.value, 'read'))
           throw new Error('Permission denied: read')
         const res = await api.get(id)
-        item.value = res.data
-        itemMeta.value = res.meta
+        return { data: res.data, meta: res.meta }
       } catch (e) {
         error.value = String(e)
+        return null
       } finally {
         loading.value = false
       }
     }
 
-    async function create(data: Partial<Model>) {
+    async function create(data: Partial<Model>): Promise<Model | null> {
       await fetchSchema()
       loading.value = true
       error.value = null
@@ -94,31 +92,27 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
         if (!hasPermission(schemaPermissions.value, 'create'))
           throw new Error('Permission denied: create')
         const res = await api.create(data)
-        item.value = res.data
         return res.data
       } catch (e) {
         error.value = String(e)
+        return null
       } finally {
         loading.value = false
       }
     }
 
-    async function update(id: ResourceId, data: Partial<Model>) {
+    async function update(id: ResourceId, data: Partial<Model>): Promise<boolean> {
       await fetchSchema()
       loading.value = true
       error.value = null
       try {
         if (!hasPermission(schemaPermissions.value, 'update'))
           throw new Error('Permission denied: update')
-        const res = await api.update(id, data)
-        if (res) {
-          item.value = res.data
-        } else if (item.value) {
-          Object.assign(item.value, data)
-        }
-        return item.value
+        await api.update(id, data)
+        return true
       } catch (e) {
         error.value = String(e)
+        return false
       } finally {
         loading.value = false
       }
@@ -197,8 +191,6 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
       items,
       itemsMeta,
       itemsById,
-      item,
-      itemMeta,
       schemaFields,
       schemaPermissions,
       schemaLoaded,

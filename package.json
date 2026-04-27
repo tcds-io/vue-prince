@@ -1,5 +1,5 @@
 {
-  "name": "vue-prince",
+  "name": "@tcds-io/vue-prince",
   "version": "0.1.0",
   "type": "module",
   "main": "./dist/vue-prince.umd.js",

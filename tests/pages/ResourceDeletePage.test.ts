@@ -15,8 +15,6 @@ function makeStore(overrides: Record<string, unknown> = {}) {
     items: [],
     itemsMeta: null,
     itemsById: {} as Record<string | number, unknown>,
-    item: null as Record<string, unknown> | null,
-    itemMeta: null,
     schemaFields: [] as unknown[],
     schemaPermissions: {} as Record<string, string>,
     schemaLoaded: true,
@@ -24,9 +22,9 @@ function makeStore(overrides: Record<string, unknown> = {}) {
     error: null as string | null,
     fetchSchema: vi.fn().mockResolvedValue(undefined),
     list: vi.fn().mockResolvedValue(undefined),
-    get: vi.fn().mockResolvedValue(undefined),
+    get: vi.fn().mockResolvedValue(null),
     create: vi.fn().mockResolvedValue({ id: 1 }),
-    update: vi.fn().mockResolvedValue({ id: 1 }),
+    update: vi.fn().mockResolvedValue(true),
     remove: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   }
@@ -71,9 +69,10 @@ describe('ResourceDeletePage', () => {
   })
 
   describe('default rendering', () => {
-    it('renders a PrinceCard with title using item title when loaded', () => {
-      store.item = { id: 1, name: 'Acme Corp' }
+    it('renders a PrinceCard with title using item title when loaded', async () => {
+      store.get.mockResolvedValue({ data: { id: 1, name: 'Acme Corp' }, meta: null })
       const wrapper = mountPage()
+      await flushPromises()
       expect(wrapper.findComponent(PrinceCard).props('title')).toBe('Delete Acme Corp')
     })
 
@@ -105,9 +104,10 @@ describe('ResourceDeletePage', () => {
       expect(wrapper.findComponent(PrinceCard).exists()).toBe(false)
     })
 
-    it('passes itemTitle to custom component', () => {
-      store.item = { id: 1, name: 'Acme Corp' }
+    it('passes itemTitle to custom component', async () => {
+      store.get.mockResolvedValue({ data: { id: 1, name: 'Acme Corp' }, meta: null })
       const wrapper = mountCustom()
+      await flushPromises()
       expect((wrapper.findComponent(CustomDelete).vm.$attrs as any).itemTitle).toBe('Acme Corp')
     })
 

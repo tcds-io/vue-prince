@@ -1,19 +1,27 @@
-# vue-resource
+# @tcds-io/vue-prince
 
 Lightweight resource-oriented CRUD framework for Vue 3 + Pinia. One `defineResource` call generates a typed API client, a Pinia store, and four routes with pre-built page components.
+
+---
+
+## Installation
+
+```bash
+npm install @tcds-io/vue-prince
+```
 
 ---
 
 ## Architecture
 
 ```
-configureVuePrince(config)          ← global config: baseUrl, field/button/layout overrides
+configureVuePrince(config)          ← global config: baseUrl, headers, field/button/layout overrides
 
 defineResource(spec)
        │
-       ├── createResourceApi(spec)           → typed fetch client
-       ├── createResourceController(spec)    → Pinia store (useStore)
-       └── createResourceRoutes(spec, useStore)
+       ├── spec.api()                        → ResourceApi (typed fetch client)
+       ├── createResourceController(spec)    → Pinia store + api instance
+       └── createResourceRoutes(spec)
                 │
                 ├── /{segment}              → ResourceListPage
                 ├── /{segment}/create       → ResourceCreatePage
@@ -30,10 +38,13 @@ Data always flows **UI → store → API**. Components never call the API direct
 ### 1. Configure (once, in `main.ts`)
 
 ```ts
-import { configureVuePrince } from '@/libs/vue-resource'
+import { configureVuePrince } from '@tcds-io/vue-prince'
 
 configureVuePrince({
-  baseUrl: import.meta.env.VITE_API_BASE_URL,
+  api: {
+    baseUrl: import.meta.env.VITE_API_BASE_URL,
+    headers: () => ({ Authorization: `Bearer ${getToken()}` }),
+  },
 })
 ```
 
@@ -41,12 +52,13 @@ configureVuePrince({
 
 ```ts
 // features/companies/company.resource.ts
-import { defineResource, createResourceController } from '@/libs/vue-resource'
-import type { InferResourceModel } from '@/libs/vue-resource'
+import { defineResource, createResourceApi, createResourceController } from '@tcds-io/vue-prince'
+import type { InferResourceModel } from '@tcds-io/vue-prince'
 
 export const companyResource = defineResource({
   name: 'company',
-  path: '/api/backoffice/companies',
+  route: '/companies',
+  api: () => createResourceApi({ path: '/api/backoffice/companies' }),
   fields: {
     id: { type: 'integer', readOnly: true, preview: true },
     name: { type: 'string', preview: true, label: 'Company Name' },
@@ -57,19 +69,19 @@ export const companyResource = defineResource({
 })
 
 export type Company = InferResourceModel<typeof companyResource>
-export const { useStore: useCompanyStore } = createResourceController(companyResource)
+export const { store: useCompanyStore } = createResourceController(companyResource)
 ```
 
 ### 3. Register routes
 
 ```ts
 // app/router.ts
-import { createResourceRoutes } from '@/libs/vue-resource'
-import { companyResource, useCompanyStore } from '@/features/companies/company.resource'
+import { createResourceRoutes } from '@tcds-io/vue-prince'
+import { companyResource } from '@/features/companies/company.resource'
 
 export const router = createRouter({
   history: createWebHistory(),
-  routes: [...createResourceRoutes(companyResource, useCompanyStore)],
+  routes: [...createResourceRoutes(companyResource)],
 })
 ```
 
@@ -79,11 +91,14 @@ Navigate to `/companies` — list, create, detail and edit are all wired up.
 
 ## `configureVuePrince(config)`
 
-Must be called before any other vue-resource function.
+Must be called before any other vue-prince function.
 
 ```ts
 configureVuePrince({
-  baseUrl: string,            // prepended to every API request
+  api: {
+    baseUrl: string,                                    // prepended to every API request
+    headers?: MaybeRefOrGetter<Record<string, string>>, // merged into every request
+  },
 
   fields?: {                  // override field rendering per type
     string?: ...,
@@ -103,10 +118,27 @@ configureVuePrince({
   },
 
   layout?: {                  // override page layout sections
-    card?: Component,         // replaces the entire card; receives LayoutCardProps + header/default/footer slots
+    card?: Component,         // replaces the card shell; receives LayoutCardProps + header/default/footer slots
     table?: Component,        // receives LayoutTableProps + slot with default <table>
+    tabs?: Component,         // receives LayoutTabsProps
+    dropdown?: Component,     // receives LayoutDropdownProps
   },
+
+  userPermissions?: () => string[], // return the current user's permission keys
 })
+```
+
+`headers` is re-evaluated on every request, so refs and getter functions always return fresh values:
+
+```ts
+// Plain object (static)
+headers: { 'X-Tenant': 'acme' }
+
+// Reactive ref
+headers: authStore.authHeaders
+
+// Getter function (re-evaluated each request)
+headers: () => ({ Authorization: `Bearer ${authStore.token}` })
 ```
 
 Field and button components can be registered as a single component (used in both contexts) or split by context:
@@ -127,11 +159,17 @@ Type-safe factory that preserves literal field types for downstream inference.
 ```ts
 type ResourceSpec = {
   name: string // singular resource name
-  path: string // full API path, e.g. '/api/backoffice/companies'
+  route: string // Vue Router path prefix, e.g. '/companies'
+  api: () => ResourceApi // factory called once by createResourceController
   fields?: Record<string, ResourceFieldDef> // optional — falls back to /_schema endpoint
-  permissions?: ResourcePermissions // optional permission keys per action
   title?: (item: Model) => string // optional — display label for a record
-  components?: ResourcePageComponents // optional — override any page with a custom component
+  components?: ResourcePageComponents // optional — override any page
+  tabs?: ResourceTab[] // optional — related resource tabs on detail page
+  actions?: {
+    list?: ResourceListAction[]
+    resource?: ResourceItemAction[]
+  }
+  validationSchema?: ValidationSchema
 }
 ```
 
@@ -173,14 +211,15 @@ import { userResource } from '@/features/users/user.resource'
 
 export const companyResource = defineResource({
   name: 'company',
-  path: '/api/backoffice/companies',
+  route: '/companies',
+  api: () => createResourceApi({ path: '/api/backoffice/companies' }),
   fields: {
     owner_id: { type: userResource },
   },
 })
 ```
 
-On list/detail pages this renders as a link to the related record. On create/edit pages it renders as an autocomplete that searches `{userResource.path}?search=...`.
+On list/detail pages this renders as a link to the related record. On create/edit pages it renders as an autocomplete that searches `userResource.api().list({ search: ... })`.
 
 ### `title`
 
@@ -190,13 +229,53 @@ Used in page headers and as the display label for related resource autocompletes
 title: (company) => `${company.name} (${company.status})`,
 ```
 
-Falls back to `"{Resource} {id}"` when not specified.
+Falls back to `String(item.id)` when not specified.
+
+---
+
+## `createResourceApi(options)`
+
+Standalone factory for a typed fetch client. Pass it as the `api` factory in your spec.
+
+```ts
+const api = createResourceApi({
+  path: string,                                       // resource API path, e.g. '/api/companies'
+  baseUrl?: string,                                   // overrides global configureVuePrince baseUrl
+  headers?: MaybeRefOrGetter<Record<string, string>>, // merged on top of global headers
+})
+```
+
+```ts
+type ResourceApi<Model> = {
+  schema(): Promise<ResourceSchemaResponse>
+  list(params?): Promise<ResourceListResponse<Model>>
+  get(id): Promise<ResourceResponse<Model>>
+  create(data): Promise<ResourceResponse<Model>>
+  update(id, data): Promise<ResourceResponse<Model> | null> // null on 204
+  remove(id): Promise<void>
+  createMany(data[]): Promise<ResourceResponse<Model>[]>
+  updateMany(data[]): Promise<void>
+  deleteMany(ids[]): Promise<void>
+}
+```
+
+| Method | Path             | Action       |
+| ------ | ---------------- | ------------ |
+| GET    | `{path}/_schema` | `schema`     |
+| GET    | `{path}`         | `list`       |
+| GET    | `{path}/:id`     | `get`        |
+| POST   | `{path}`         | `create`     |
+| PATCH  | `{path}/:id`     | `update`     |
+| DELETE | `{path}/:id`     | `remove`     |
+| POST   | `{path}`         | `createMany` |
+| PATCH  | `{path}`         | `updateMany` |
+| DELETE | `{path}`         | `deleteMany` |
 
 ---
 
 ## Routes
 
-`createResourceRoutes(spec, useStore)` registers four routes. The route segment is the last path segment of `spec.path`.
+`createResourceRoutes(spec)` registers four routes. The route segment is derived from `spec.route`.
 
 | Path                  | Page   | Action                                           |
 | --------------------- | ------ | ------------------------------------------------ |
@@ -210,57 +289,39 @@ Falls back to `"{Resource} {id}"` when not specified.
 ## Store (`createResourceController`)
 
 ```ts
-const { useStore: useCompanyStore } = createResourceController(companyResource)
+const { store: useCompanyStore, api } = createResourceController(companyResource)
 ```
 
-The store satisfies `ResourcePageStore`:
+Returns `{ store, api }` — `store` is the Pinia store factory, `api` is the `ResourceApi` instance created by calling `spec.api()` once.
+
+The store exposes:
 
 ```ts
-interface ResourcePageStore {
-  // state
-  list: ListModel[]
-  listMeta: ResourceListMetadata | null // pagination, total, current_page, etc.
-  item: Model | null
-  itemMeta: ResourceMetadata | null // includes schema from GET /:id response
-  schemaFields: ResourceSchemaField[] // fetched from /_schema (for create page)
-  loading: boolean
-  error: string | null
+// state
+store.items          // current page of records
+store.itemsMeta      // pagination metadata
+store.itemsById      // records indexed by id
+store.schemaFields   // fields from /_schema
+store.schemaPermissions
+store.schemaLoaded
+store.loading
+store.error
 
-  // actions
-  fetchSchema(): Promise<void>
-  fetchList(params?: Record<string, string>): Promise<void>
-  fetchItem(id: ResourceId): Promise<void>
-  create(data: Record<string, unknown>): Promise<unknown>
-  update(id: ResourceId, data: Record<string, unknown>): Promise<unknown>
-  remove(id: ResourceId): Promise<void>
-}
+// actions
+store.fetchSchema(): Promise<void>
+store.list(params?): Promise<void>
+store.get(id): Promise<{ data, meta } | null>     // returns data, does not store it
+store.create(data): Promise<Model | null>          // returns created record
+store.update(id, data): Promise<boolean>           // true = success
+store.remove(id): Promise<void>
+store.createMany(data[]): Promise<Model[] | undefined>
+store.updateMany(data[]): Promise<void>
+store.deleteMany(ids[]): Promise<void>
 ```
 
 All actions set `loading = true` while in-flight and populate `error` on failure.
 
----
-
-## API client (`createResourceApi`)
-
-```ts
-type ResourceApi<Model> = {
-  schema(): Promise<ResourceSchemaField[]>
-  list(params?): Promise<ResourceListResponse<Model>>
-  get(id): Promise<ResourceResponse<Model>>
-  create(data): Promise<ResourceResponse<Model>>
-  update(id, data): Promise<ResourceResponse<Model> | null> // null on 204
-  remove(id): Promise<void>
-}
-```
-
-| Method | Path             | Action   |
-| ------ | ---------------- | -------- |
-| GET    | `{path}/_schema` | `schema` |
-| GET    | `{path}`         | `list`   |
-| GET    | `{path}/:id`     | `get`    |
-| POST   | `{path}`         | `create` |
-| PATCH  | `{path}/:id`     | `update` |
-| DELETE | `{path}/:id`     | `remove` |
+> `get()` returns the record directly rather than storing it in shared state. This prevents stale data from a previous navigation from appearing briefly on the new detail page.
 
 ---
 
@@ -281,8 +342,8 @@ interface FieldProps {
 
 ```vue
 <script setup lang="ts">
-import type { FieldProps } from '@/libs/vue-resource'
-import { useFieldEditable } from '@/libs/vue-resource'
+import type { FieldProps } from '@tcds-io/vue-prince'
+import { useFieldEditable } from '@tcds-io/vue-prince'
 
 const value = defineModel<string>('value')
 const props = defineProps<FieldProps>()
@@ -298,7 +359,7 @@ Register via `config.fields.resource`. The component receives `AutocompleteField
 
 ```ts
 interface AutocompleteFieldProps extends FieldProps {
-  refSpec: ResourceSpec // for routing
+  refSpec: ResourceSpec
   search(params: Record<string, string>): Promise<ResourceOption[]>
   fetchLabel(id: number): Promise<string>
   title(item: Record<string, unknown>): string
@@ -345,23 +406,24 @@ The most powerful escape hatch — replace an entire page with your own componen
 ### Register per resource
 
 ```ts
-// features/products/product.resource.ts
 import ProductListPage from './ui/ProductListPage.vue'
 import ProductView from './ui/ProductView.vue'
 
 export const productResource = defineResource({
   name: 'product',
-  path: '/api/backoffice/products',
+  route: '/products',
+  api: () => createResourceApi({ path: '/api/backoffice/products' }),
   components: {
     list: ProductListPage, // replaces ResourceListPage
     view: ProductView, // replaces ResourceDetailPage
     create: ProductCreate, // replaces ResourceCreatePage
     edit: ProductEdit, // replaces ResourceEditPage
+    delete: ProductDelete, // replaces ResourceDeletePage
   },
 })
 ```
 
-All four keys are optional — omit any you want to keep as default.
+All five keys are optional — omit any you want to keep as default.
 
 ### Props injected per page
 
@@ -370,7 +432,7 @@ Import the matching interface and pass it to `defineProps`:
 ```vue
 <!-- ProductListPage.vue -->
 <script setup lang="ts">
-import type { ResourceListPageProps } from '@/libs/vue-resource'
+import type { ResourceListPageProps } from '@tcds-io/vue-prince'
 
 const props = defineProps<ResourceListPageProps>()
 // props.items         — current page of records
@@ -381,18 +443,19 @@ const props = defineProps<ResourceListPageProps>()
 // props.error         — error message or null
 // props.listMeta      — pagination info (total, last_page, per_page, …)
 // props.page          — current page number
-// props.navigateToItem(item)  — go to detail page
-// props.goToPage(n)           — go to page n
-// props.createNew()           — go to create page
+// props.navigateToItem(item)
+// props.goToPage(n)
+// props.createNew()
 </script>
 ```
 
 | Page     | Props interface           | Key props                                                              |
 | -------- | ------------------------- | ---------------------------------------------------------------------- |
 | `list`   | `ResourceListPageProps`   | `items`, `listMeta`, `page`, `navigateToItem`, `goToPage`, `createNew` |
-| `view`   | `ResourceViewPageProps`   | `item`, `itemTitle`, `back`, `edit`, `remove`                          |
+| `view`   | `ResourceViewPageProps`   | `item`, `itemTitle`, `back`, `edit`, `confirmDelete`                   |
 | `create` | `ResourceCreatePageProps` | `schema`, `submit(data)`, `cancel`                                     |
 | `edit`   | `ResourceEditPageProps`   | `item`, `itemTitle`, `submit(data)`, `cancel`                          |
+| `delete` | `ResourceDeletePageProps` | `item`, `itemTitle`, `confirm`, `cancel`                               |
 
 All interfaces also include `schema`, `labels`, `resource`, `loading`, and `error`.
 
@@ -419,7 +482,7 @@ All interfaces also include `schema`, `labels`, `resource`, `loading`, and `erro
 </template>
 
 <script setup lang="ts">
-import type { ResourceListPageProps } from '@/libs/vue-resource'
+import type { ResourceListPageProps } from '@tcds-io/vue-prince'
 
 const props = defineProps<ResourceListPageProps>()
 </script>
@@ -438,7 +501,7 @@ const props = defineProps<ResourceListPageProps>()
 
 <script setup lang="ts">
 import { reactive } from 'vue'
-import type { ResourceEditPageProps } from '@/libs/vue-resource'
+import type { ResourceEditPageProps } from '@tcds-io/vue-prince'
 
 const props = defineProps<ResourceEditPageProps>()
 const form = reactive({ name: (props.item?.name as string) ?? '' })
@@ -455,7 +518,7 @@ async function handleSubmit() {
 
 ## Custom layout components
 
-Replace the card shell or the table independently via `configureVuePrince({ layout: { card, table } })`.
+Replace the card shell, table, tabs, or dropdown via `configureVuePrince({ layout: { ... } })`.
 
 ### `card`
 
@@ -467,10 +530,6 @@ Replaces the entire card wrapper used on every built-in page. The component rece
 | _(default)_ | Page content (form fields / detail) |
 | `#footer`   | Action buttons / pagination         |
 
-```ts
-import type { LayoutCardProps } from '@/libs/vue-resource'
-```
-
 ```vue
 <!-- MyCard.vue -->
 <template>
@@ -478,33 +537,27 @@ import type { LayoutCardProps } from '@/libs/vue-resource'
     <span v-if="title">{{ title }}</span>
     <slot name="header" />
   </div>
-  <div class="my-card-body">
-    <slot />
-  </div>
-  <div v-if="$slots.footer" class="my-card-footer">
-    <slot name="footer" />
-  </div>
+  <div class="my-card-body"><slot /></div>
+  <div v-if="$slots.footer" class="my-card-footer"><slot name="footer" /></div>
 </template>
 
 <script setup lang="ts">
-import type { LayoutCardProps } from '@/libs/vue-resource'
+import type { LayoutCardProps } from '@tcds-io/vue-prince'
 defineProps<LayoutCardProps>()
 </script>
-```
-
-```ts
-configureVuePrince({ layout: { card: MyCard } })
 ```
 
 ### `table`
 
 Wraps or replaces the list table. Receives `LayoutTableProps` and a `<slot />` with the default `<table>`.
 
-```ts
-import type { LayoutTableProps } from '@/libs/vue-resource'
-```
+### `tabs`
 
-The component can wrap the default table (`<slot />`) or ignore it and render entirely from `items` / `schema` props.
+Replaces the tab strip on resource detail pages. Receives `LayoutTabsProps` (`labels: string[]`, `modelValue?: number`) and a default slot with the active tab content.
+
+### `dropdown`
+
+Replaces the actions dropdown on list/detail pages. Receives `LayoutDropdownProps` (`actions: { label, onClick }[]`).
 
 ---
 
@@ -554,36 +607,41 @@ resource-table   {resource}-table
 ## File structure
 
 ```
-src/libs/vue-resource/
+src/
 ├── index.ts                     # all public exports
 ├── config.ts                    # configureVuePrince, VuePrinceConfig
 ├── resource.ts                  # defineResource, ResourceSpec, type inference
 ├── resource-api.ts              # createResourceApi
 ├── resource-controller.ts       # createResourceController
-├── resource-routes.ts           # createResourceRoutes, ResourcePageStore
-├── api.ts                       # response/metadata types
+├── resource-routes.ts           # createResourceRoutes
+├── api.ts                       # ResourceApi, response/metadata types
 ├── field-props.ts               # FieldProps, SelectFieldProps, AutocompleteFieldProps,
-│                                #   ResourceFieldProps, useFieldEditable, useAutocomplete
+│                                #   useFieldEditable, useAutocomplete
 ├── button-props.ts              # PrinceButtonType, CustomButtonProps
 ├── page-props.ts                # ResourceListPageProps, ResourceViewPageProps,
-│                                #   ResourceCreatePageProps, ResourceEditPageProps
+│                                #   ResourceCreatePageProps, ResourceEditPageProps,
+│                                #   ResourceDeletePageProps
 ├── pages/                       # orchestrator pages (routing + data wiring)
 │   ├── ResourceListPage.vue
 │   ├── ResourceCreatePage.vue
 │   ├── ResourceDetailPage.vue
 │   ├── ResourceEditPage.vue
-│   └── useResourceMeta.ts       # useResourceSchema, useResourceLabels
+│   ├── ResourceDeletePage.vue
+│   ├── ResourceDetailTabs.vue
+│   ├── ResourceListTabContent.vue
+│   ├── ResourceTabView.vue
+│   ├── use-resource-meta.ts     # useResourceSchema, useResourceLabels
+│   └── use-resource-tabs.ts
 └── ui/                          # reusable UI primitives (no routing, props-only)
-    ├── prince.css               # CSS design tokens (optional import)
     ├── PrinceButton.vue
     ├── PrinceCard.vue
+    ├── PrinceTabs.vue
     ├── ResourceListView.vue     # table + loading/error state
     ├── ResourceDetailView.vue   # read-only field display
     ├── ResourceFormView.vue     # editable form with submit/cancel
     └── fields/
         ├── index.ts             # resolveFieldComponent, buildResourceFieldProps,
         │                        #   normalizeFieldType, toFieldLabel, slugify
-        ├── field-base.css       # shared field styles
         ├── TextField.vue
         ├── NumberField.vue
         ├── TextAreaField.vue

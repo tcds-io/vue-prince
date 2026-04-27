@@ -15,8 +15,6 @@ function makeStore(overrides: Record<string, unknown> = {}) {
     items: [],
     itemsMeta: null,
     itemsById: {} as Record<string | number, unknown>,
-    item: null as Record<string, unknown> | null,
-    itemMeta: null,
     schemaFields: [] as unknown[],
     schemaPermissions: {} as Record<string, string>,
     schemaLoaded: true,
@@ -24,9 +22,9 @@ function makeStore(overrides: Record<string, unknown> = {}) {
     error: null as string | null,
     fetchSchema: vi.fn().mockResolvedValue(undefined),
     list: vi.fn().mockResolvedValue(undefined),
-    get: vi.fn().mockResolvedValue(undefined),
+    get: vi.fn().mockResolvedValue(null),
     create: vi.fn().mockResolvedValue({ id: 1 }),
-    update: vi.fn().mockResolvedValue({ id: 1 }),
+    update: vi.fn().mockResolvedValue(true),
     remove: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   }
@@ -93,9 +91,10 @@ describe('ResourceDetailPage', () => {
       expect(wrapper.findComponent(CustomView).exists()).toBe(false)
     })
 
-    it('passes store.item to ResourceDetailView', () => {
-      store.item = { id: 1, name: 'Acme' }
+    it('passes item to ResourceDetailView after load', async () => {
+      store.get.mockResolvedValue({ data: { id: 1, name: 'Acme' }, meta: null })
       const wrapper = mountPage()
+      await flushPromises()
       expect(wrapper.findComponent(ResourceDetailView).props('item')).toEqual({
         id: 1,
         name: 'Acme',
@@ -160,14 +159,14 @@ describe('ResourceDetailPage', () => {
       expect((wrapper.findComponent(CustomView).vm.$attrs as any).itemTitle).toBeUndefined()
     })
 
-    it('itemTitle uses spec.title with the loaded item', () => {
-      store.item = { id: 1, name: 'Acme Corp' }
+    it('itemTitle uses spec.title with the loaded item', async () => {
+      store.get.mockResolvedValue({ data: { id: 1, name: 'Acme Corp' }, meta: null })
       const wrapper = mountCustom({ title: (item: any) => item.name })
+      await flushPromises()
       expect((wrapper.findComponent(CustomView).vm.$attrs as any).itemTitle).toBe('Acme Corp')
     })
 
     it('itemTitle is undefined when item is not yet loaded', () => {
-      store.item = null
       const wrapper = mountCustom({ title: (item: any) => item.name })
       expect((wrapper.findComponent(CustomView).vm.$attrs as any).itemTitle).toBeUndefined()
     })
@@ -189,10 +188,14 @@ describe('ResourceDetailPage', () => {
       expect((wrapper.findComponent(CustomView).vm.$attrs as any).error).toBe('not found')
     })
 
-    it('passes item from store', () => {
-      store.item = { id: 1, name: 'Acme' }
+    it('passes item after load', async () => {
+      store.get.mockResolvedValue({ data: { id: 1, name: 'Acme' }, meta: null })
       const wrapper = mountCustom()
-      expect((wrapper.findComponent(CustomView).vm.$attrs as any).item).toEqual(store.item)
+      await flushPromises()
+      expect((wrapper.findComponent(CustomView).vm.$attrs as any).item).toEqual({
+        id: 1,
+        name: 'Acme',
+      })
     })
   })
 

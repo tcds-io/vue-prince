@@ -18,10 +18,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { createResourceController } from '../resource-controller'
-import type { ResourceSchemaField } from '../api'
+import type { ResourceMetadata, ResourceSchemaField } from '../api'
 import type { ResourceEditPageProps } from '../page-props'
 import ResourceFormView from '../ui/ResourceFormView.vue'
 import { useResourceSchema, useResourceLabels } from './use-resource-meta'
@@ -33,36 +33,41 @@ const store = createResourceController(route.meta.spec!).store()
 const id = route.params.id as string
 const segment = computed(() => route.meta.spec?.route.split('/').pop())
 
+const item = ref<Record<string, unknown> | null>(null)
+const itemMeta = ref<ResourceMetadata | null>(null)
+
 const schema = useResourceSchema(() =>
-  store.itemMeta?.schema?.length
-    ? store.itemMeta.schema
+  itemMeta.value?.schema?.length
+    ? itemMeta.value.schema
     : (store.schemaFields as ResourceSchemaField[]),
 )
 const labels = useResourceLabels()
 
 const itemTitle = computed(() => {
   const titleFn = route.meta.spec?.title
-  return titleFn && store.item ? titleFn(store.item as Record<string, unknown>) : undefined
+  return titleFn && item.value ? titleFn(item.value) : undefined
 })
 
 async function submit(data: Record<string, unknown>) {
-  const updated = await store.update(id, data)
-  if (updated) router.push({ name: `${segment.value}-detail`, params: { id } })
+  const ok = await store.update(id, data)
+  if (ok) router.push({ name: `${segment.value}-detail`, params: { id } })
 }
 
 function cancel() {
   router.push({ name: `${segment.value}-detail`, params: { id } })
 }
 
-onMounted(() => {
+onMounted(async () => {
   const specFields = route.meta.spec?.fields
   if (!specFields || Object.keys(specFields).length === 0) store.fetchSchema()
-  store.get(id)
+  const result = await store.get(id)
+  if (result) {
+    item.value = result.data as Record<string, unknown>
+    itemMeta.value = result.meta
+  }
 })
 
 const customComponent = computed(() => route.meta.spec?.components?.edit)
-
-const item = computed(() => store.item as Record<string, unknown> | null)
 
 const customProps = computed<ResourceEditPageProps>(() => ({
   item: item.value,
