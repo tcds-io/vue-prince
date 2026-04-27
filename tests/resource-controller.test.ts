@@ -46,8 +46,6 @@ describe('createResourceController', () => {
     expect(store.items).toEqual([])
     expect(store.itemsMeta).toBeNull()
     expect(store.itemsById).toEqual({})
-    expect(store.item).toBeNull()
-    expect(store.itemMeta).toBeNull()
     expect(store.schemaFields).toEqual([])
     expect(store.schemaPermissions).toEqual({})
     expect(store.schemaLoaded).toBe(false)
@@ -144,63 +142,68 @@ describe('createResourceController', () => {
   })
 
   describe('get()', () => {
-    it('populates item and itemMeta', async () => {
+    it('returns item data and meta', async () => {
       const data = { id: 1, name: 'Acme' }
       const meta = { resource: 'company', schema: [], resources: [] }
       global.fetch = mockFetchWithSchema({ data, meta })
       const { store: useStore } = createResourceController(makeSpec())
       const store = useStore()
-      await store.get(1)
-      expect(store.item).toEqual(data)
-      expect(store.itemMeta).toEqual(meta)
+      const result = await store.get(1)
+      expect(result?.data).toEqual(data)
+      expect(result?.meta).toEqual(meta)
+    })
+
+    it('returns null on error', async () => {
+      global.fetch = vi.fn().mockRejectedValue(new Error('Network'))
+      const { store: useStore } = createResourceController(makeSpec())
+      const store = useStore()
+      const result = await store.get(1)
+      expect(result).toBeNull()
     })
   })
 
   describe('create()', () => {
-    it('POSTs data, stores item, and returns it', async () => {
+    it('POSTs data and returns the created item', async () => {
       const data = { id: 1, name: 'Acme' }
       global.fetch = mockFetchWithSchema({ data, meta: {} })
       const { store: useStore } = createResourceController(makeSpec())
       const store = useStore()
       const result = await store.create({ name: 'Acme' })
       expect(result).toEqual(data)
-      expect(store.item).toEqual(data)
+    })
+
+    it('returns null on error', async () => {
+      global.fetch = vi.fn().mockRejectedValue(new Error('Network'))
+      const { store: useStore } = createResourceController(makeSpec())
+      const store = useStore()
+      const result = await store.create({ name: 'Acme' })
+      expect(result).toBeNull()
     })
   })
 
   describe('update()', () => {
-    it('PATCHes data and stores the updated item', async () => {
-      const data = { id: 1, name: 'Updated' }
-      global.fetch = mockFetchWithSchema({ data, meta: {} })
+    it('PATCHes data and returns true on success', async () => {
+      global.fetch = mockFetchWithSchema({ data: { id: 1, name: 'Updated' }, meta: {} })
       const { store: useStore } = createResourceController(makeSpec())
       const store = useStore()
-      await store.update(1, { name: 'Updated' })
-      expect(store.item).toEqual(data)
+      const ok = await store.update(1, { name: 'Updated' })
+      expect(ok).toBe(true)
     })
 
-    it('merges patch data into item when API returns 204', async () => {
+    it('returns true on 204 No Content', async () => {
+      global.fetch = mockFetchWithSchema(null, 204)
       const { store: useStore } = createResourceController(makeSpec())
       const store = useStore()
-      global.fetch = vi
-        .fn()
-        .mockResolvedValueOnce({
-          // schema
-          status: 200,
-          json: () => Promise.resolve({ schema: [], permissions: {} }),
-        })
-        .mockResolvedValueOnce({
-          // get
-          status: 200,
-          json: () => Promise.resolve({ data: { id: 1, name: 'Acme' }, meta: {} }),
-        })
-        .mockResolvedValueOnce({
-          // update (204)
-          status: 204,
-          json: () => Promise.resolve(null),
-        })
-      await store.get(1)
-      await store.update(1, { name: 'Acme Updated' })
-      expect((store.item as any)?.name).toBe('Acme Updated')
+      const ok = await store.update(1, { name: 'Updated' })
+      expect(ok).toBe(true)
+    })
+
+    it('returns false on error', async () => {
+      global.fetch = vi.fn().mockRejectedValue(new Error('Network'))
+      const { store: useStore } = createResourceController(makeSpec())
+      const store = useStore()
+      const ok = await store.update(1, { name: 'Updated' })
+      expect(ok).toBe(false)
     })
   })
 

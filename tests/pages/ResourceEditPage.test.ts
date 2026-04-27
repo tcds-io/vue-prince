@@ -15,8 +15,6 @@ function makeStore(overrides: Record<string, unknown> = {}) {
     items: [],
     itemsMeta: null,
     itemsById: {} as Record<string | number, unknown>,
-    item: null as Record<string, unknown> | null,
-    itemMeta: null,
     schemaFields: [] as unknown[],
     schemaPermissions: {} as Record<string, string>,
     schemaLoaded: true,
@@ -24,9 +22,9 @@ function makeStore(overrides: Record<string, unknown> = {}) {
     error: null as string | null,
     fetchSchema: vi.fn().mockResolvedValue(undefined),
     list: vi.fn().mockResolvedValue(undefined),
-    get: vi.fn().mockResolvedValue(undefined),
+    get: vi.fn().mockResolvedValue(null),
     create: vi.fn().mockResolvedValue({ id: 1 }),
-    update: vi.fn().mockResolvedValue({ id: 1 }),
+    update: vi.fn().mockResolvedValue(true),
     remove: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   }
@@ -98,9 +96,10 @@ describe('ResourceEditPage', () => {
       expect(wrapper.findComponent(ResourceFormView).props('page')).toBe('EDIT')
     })
 
-    it('passes store.item to ResourceFormView', () => {
-      store.item = { id: 1, name: 'Acme' }
+    it('passes item to ResourceFormView after load', async () => {
+      store.get.mockResolvedValue({ data: { id: 1, name: 'Acme' }, meta: null })
       const wrapper = mountPage()
+      await flushPromises()
       expect(wrapper.findComponent(ResourceFormView).props('item')).toEqual({ id: 1, name: 'Acme' })
     })
 
@@ -152,8 +151,8 @@ describe('ResourceEditPage', () => {
       expect(mockPush).toHaveBeenCalledWith({ name: 'companies-detail', params: { id: '3' } })
     })
 
-    it('submit does not navigate if update returns null', async () => {
-      store.update = vi.fn().mockResolvedValue(null)
+    it('submit does not navigate if update returns false', async () => {
+      store.update = vi.fn().mockResolvedValue(false)
       const wrapper = mountCustom()
       await flushPromises()
       const { submit } = wrapper.findComponent(CustomEdit).vm.$attrs as any
@@ -173,14 +172,14 @@ describe('ResourceEditPage', () => {
       expect((wrapper.findComponent(CustomEdit).vm.$attrs as any).itemTitle).toBeUndefined()
     })
 
-    it('itemTitle uses spec.title with the loaded item', () => {
-      store.item = { id: 1, name: 'Acme Corp' }
+    it('itemTitle uses spec.title with the loaded item', async () => {
+      store.get.mockResolvedValue({ data: { id: 1, name: 'Acme Corp' }, meta: null })
       const wrapper = mountCustom({ title: (item: any) => item.name })
+      await flushPromises()
       expect((wrapper.findComponent(CustomEdit).vm.$attrs as any).itemTitle).toBe('Acme Corp')
     })
 
     it('itemTitle is undefined when item is not yet loaded', () => {
-      store.item = null
       const wrapper = mountCustom({ title: (item: any) => item.name })
       expect((wrapper.findComponent(CustomEdit).vm.$attrs as any).itemTitle).toBeUndefined()
     })
@@ -202,10 +201,14 @@ describe('ResourceEditPage', () => {
       expect((wrapper.findComponent(CustomEdit).vm.$attrs as any).error).toBe('conflict')
     })
 
-    it('passes item from store', () => {
-      store.item = { id: 1, name: 'Acme' }
+    it('passes item after load', async () => {
+      store.get.mockResolvedValue({ data: { id: 1, name: 'Acme' }, meta: null })
       const wrapper = mountCustom()
-      expect((wrapper.findComponent(CustomEdit).vm.$attrs as any).item).toEqual(store.item)
+      await flushPromises()
+      expect((wrapper.findComponent(CustomEdit).vm.$attrs as any).item).toEqual({
+        id: 1,
+        name: 'Acme',
+      })
     })
   })
 })

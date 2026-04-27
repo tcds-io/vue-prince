@@ -21,15 +21,15 @@
       </template>
     </ResourceDetailView>
 
-    <ResourceDetailTabs :tabs="tabs" :resource-id="id" :resource="item ?? {}" />
+    <ResourceDetailTabs v-if="item" :tabs="tabs" :resource-id="id" :resource="item" />
   </template>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { createResourceController } from '../resource-controller'
-import type { ResourceSchemaField } from '../api'
+import type { ResourceMetadata, ResourceSchemaField } from '../api'
 import type { ResourceViewPageProps } from '../page-props'
 import ResourceDetailView from '../ui/ResourceDetailView.vue'
 import ResourceDetailTabs from './ResourceDetailTabs.vue'
@@ -47,26 +47,31 @@ const store = createResourceController(route.meta.spec!).store()
 const id = route.params.id as string
 const segment = computed(() => route.meta.spec?.route.split('/').pop())
 
+const item = ref<Record<string, unknown> | null>(null)
+const itemMeta = ref<ResourceMetadata | null>(null)
+
 const schema = useResourceSchema(() =>
-  store.itemMeta?.schema?.length
-    ? store.itemMeta.schema
+  itemMeta.value?.schema?.length
+    ? itemMeta.value.schema
     : (store.schemaFields as ResourceSchemaField[]),
 )
 const labels = useResourceLabels()
-
-const item = computed(() => store.item as Record<string, unknown> | null)
 
 const { tabs } = route.meta.spec ? useResourceTabs(route.meta.spec) : { tabs: [] }
 
 const itemTitle = computed(() => {
   const titleFn = route.meta.spec?.title
-  return titleFn && store.item ? titleFn(store.item as Record<string, unknown>) : undefined
+  return titleFn && item.value ? titleFn(item.value) : undefined
 })
 
-onMounted(() => {
+onMounted(async () => {
   const specFields = route.meta.spec?.fields
   if (!specFields || Object.keys(specFields).length === 0) store.fetchSchema()
-  store.get(id)
+  const result = await store.get(id)
+  if (result) {
+    item.value = result.data as Record<string, unknown>
+    itemMeta.value = result.meta
+  }
 })
 
 function back() {
@@ -99,7 +104,7 @@ const resourceActions = computed(() => {
 const customComponent = computed(() => route.meta.spec?.components?.view)
 
 const customProps = computed<ResourceViewPageProps>(() => ({
-  item: store.item as Record<string, unknown> | null,
+  item: item.value,
   schema: schema.value,
   labels: labels.value,
   resource: route.meta.spec?.name,
