@@ -14,6 +14,10 @@ export function createResourceApi(options: {
   headers?: MaybeRefOrGetter<Record<string, string>>
 }): ResourceApi {
   const defaultHeaders = { 'Content-Type': 'application/json', Accept: 'application/json' }
+
+  function assertOk(response: Response) {
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+  }
   // Evaluated on every request so reactive refs and getter functions always return fresh values.
   const getHeaders = () => ({
     ...defaultHeaders,
@@ -26,6 +30,7 @@ export function createResourceApi(options: {
       const response = await fetch(`${getBase()}${options.path}/_schema`, {
         headers: getHeaders(),
       })
+      assertOk(response)
       const body = (await response.json()) as {
         schema: ResourceSchemaField[]
         permissions?: Record<string, string>
@@ -44,7 +49,7 @@ export function createResourceApi(options: {
       }
 
       const response = await fetch(url, { headers: getHeaders() })
-
+      assertOk(response)
       return (await response.json()) as Promise<ResourceListResponse<Record<string, unknown>>>
     },
 
@@ -52,7 +57,7 @@ export function createResourceApi(options: {
       const response = await fetch(`${getBase()}${options.path}/${id}`, {
         headers: getHeaders(),
       })
-
+      assertOk(response)
       return (await response.json()) as Promise<ResourceResponse<Record<string, unknown>>>
     },
 
@@ -63,6 +68,7 @@ export function createResourceApi(options: {
         body: JSON.stringify(data),
       })
 
+      assertOk(response)
       const body = await response.json()
       // Support both enveloped { data, meta } and bare { id, ... } responses
       return ('data' in body ? body : { data: body }) as ResourceResponse<Record<string, unknown>>
@@ -75,15 +81,17 @@ export function createResourceApi(options: {
         body: JSON.stringify(data),
       })
 
+      assertOk(response)
       if (response.status === 204) return null
       return (await response.json()) as Promise<ResourceResponse<Record<string, unknown>>>
     },
 
     async remove(id) {
-      await fetch(`${getBase()}${options.path}/${id}`, {
+      const response = await fetch(`${getBase()}${options.path}/${id}`, {
         method: 'DELETE',
         headers: getHeaders(),
       })
+      assertOk(response)
     },
 
     async createMany(data) {
@@ -92,25 +100,28 @@ export function createResourceApi(options: {
         headers: getHeaders(),
         body: JSON.stringify({ data }),
       })
+      assertOk(response)
       const body = await response.json()
       // Support { data: [...] } envelope or bare array
       return (Array.isArray(body) ? body : body.data) as ResourceResponse<Record<string, unknown>>[]
     },
 
     async updateMany(data) {
-      await fetch(`${getBase()}${options.path}`, {
+      const response = await fetch(`${getBase()}${options.path}`, {
         method: 'PATCH',
         headers: getHeaders(),
         body: JSON.stringify({ data }),
       })
+      assertOk(response)
     },
 
     async deleteMany(ids) {
-      await fetch(`${getBase()}${options.path}`, {
+      const response = await fetch(`${getBase()}${options.path}`, {
         method: 'DELETE',
         headers: getHeaders(),
         body: JSON.stringify({ data: ids }),
       })
+      assertOk(response)
     },
   }
 }

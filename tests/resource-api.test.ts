@@ -11,6 +11,7 @@ function makeApi(path = BASE_URL) {
 function mockFetch(body: unknown, status = 200) {
   return vi.fn().mockResolvedValue({
     status,
+    ok: status >= 200 && status < 300,
     json: () => Promise.resolve(body),
   })
 }
@@ -132,7 +133,7 @@ describe('createResourceApi', () => {
     })
 
     it('returns null on 204 No Content', async () => {
-      global.fetch = vi.fn().mockResolvedValue({ status: 204, json: () => Promise.resolve(null) })
+      global.fetch = vi.fn().mockResolvedValue({ status: 204, ok: true, json: () => Promise.resolve(null) })
       const result = await makeApi().update(1, {} as any)
       expect(result).toBeNull()
     })
@@ -140,7 +141,7 @@ describe('createResourceApi', () => {
 
   describe('remove()', () => {
     it('DELETEs /{id}', async () => {
-      global.fetch = vi.fn().mockResolvedValue({ status: 204 })
+      global.fetch = vi.fn().mockResolvedValue({ status: 204, ok: true })
       await makeApi().remove(1)
       const [url, options] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0]
       expect(url).toBe('https://api.example.com/api/companies/1')
@@ -148,11 +149,42 @@ describe('createResourceApi', () => {
     })
 
     it('sends the correct Accept and Content-Type headers', async () => {
-      global.fetch = vi.fn().mockResolvedValue({ status: 204 })
+      global.fetch = vi.fn().mockResolvedValue({ status: 204, ok: true })
       await makeApi().remove(1)
       const [, options] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0]
       expect(options.headers['Accept']).toBe('application/json')
       expect(options.headers['Content-Type']).toBe('application/json')
+    })
+  })
+
+  describe('error responses', () => {
+    it('throws on non-2xx status for create()', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 422,
+        ok: false,
+        json: () => Promise.resolve({ message: 'Validation failed' }),
+      })
+      await expect(makeApi().create({ name: 'Acme' } as any)).rejects.toThrow('HTTP 422')
+    })
+
+    it('throws on non-2xx status for list()', async () => {
+      global.fetch = vi.fn().mockResolvedValue({ status: 500, ok: false, json: vi.fn() })
+      await expect(makeApi().list()).rejects.toThrow('HTTP 500')
+    })
+
+    it('throws on non-2xx status for get()', async () => {
+      global.fetch = vi.fn().mockResolvedValue({ status: 404, ok: false, json: vi.fn() })
+      await expect(makeApi().get(1)).rejects.toThrow('HTTP 404')
+    })
+
+    it('throws on non-2xx status for update()', async () => {
+      global.fetch = vi.fn().mockResolvedValue({ status: 400, ok: false, json: vi.fn() })
+      await expect(makeApi().update(1, {} as any)).rejects.toThrow('HTTP 400')
+    })
+
+    it('throws on non-2xx status for remove()', async () => {
+      global.fetch = vi.fn().mockResolvedValue({ status: 403, ok: false })
+      await expect(makeApi().remove(1)).rejects.toThrow('HTTP 403')
     })
   })
 
@@ -188,7 +220,7 @@ describe('createResourceApi', () => {
 
   describe('updateMany()', () => {
     it('PATCHes the base URL with { data: [...] } body', async () => {
-      global.fetch = vi.fn().mockResolvedValue({ status: 204 })
+      global.fetch = vi.fn().mockResolvedValue({ status: 204, ok: true })
       const payload = [
         { id: 1, name: 'Updated' },
         { id: 2, name: 'Also Updated' },
@@ -203,7 +235,7 @@ describe('createResourceApi', () => {
 
   describe('deleteMany()', () => {
     it('DELETEs the base URL with { data: [...] } body (no /{id} in URL)', async () => {
-      global.fetch = vi.fn().mockResolvedValue({ status: 204 })
+      global.fetch = vi.fn().mockResolvedValue({ status: 204, ok: true })
       await makeApi().deleteMany([1, 2, 3])
       const [url, options] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0]
       expect(url).toBe('https://api.example.com/api/companies')
@@ -214,7 +246,7 @@ describe('createResourceApi', () => {
 
   describe('reactive headers', () => {
     it('merges custom headers on top of defaults', async () => {
-      global.fetch = vi.fn().mockResolvedValue({ status: 204 })
+      global.fetch = vi.fn().mockResolvedValue({ status: 204, ok: true })
       const api = createResourceApi({
         path: '/api/companies',
         headers: { Authorization: 'Bearer token123' },
@@ -226,7 +258,7 @@ describe('createResourceApi', () => {
     })
 
     it('re-evaluates getter headers on each request', async () => {
-      global.fetch = vi.fn().mockResolvedValue({ status: 204 })
+      global.fetch = vi.fn().mockResolvedValue({ status: 204, ok: true })
       let token = 'first'
       const api = createResourceApi({
         path: '/api/companies',
