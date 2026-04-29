@@ -29,7 +29,7 @@ function makeStore(schemaPermissions: Record<string, string> = {}) {
 }
 
 function mountWrapper(
-  action: string | undefined,
+  action: 'read' | 'create' | 'update' | 'delete' | undefined,
   permsStore: ReturnType<typeof makePermissionsStore>,
   schemaPermissions: Record<string, string> = {},
 ) {

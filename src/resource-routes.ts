@@ -2,7 +2,7 @@ import { defineComponent, h } from 'vue'
 import type { Component } from 'vue'
 import type { RouteRecordRaw } from 'vue-router'
 import type { ResourceId, ResourceListMetadata, ResourceMetadata, ResourceSchemaField } from './api'
-import type { ResourceSpec } from './resource'
+import type { ResourcePermissions, ResourceSpec } from './resource'
 import ResourceListPage from './pages/ResourceListPage.vue'
 import ResourceDetailPage from './pages/ResourceDetailPage.vue'
 import ResourceCreatePage from './pages/ResourceCreatePage.vue'
@@ -38,7 +38,7 @@ declare module 'vue-router' {
   }
 }
 
-function withPermission(inner: Component, action: string): Component {
+function withPermission(inner: Component, action: keyof ResourcePermissions): Component {
   return defineComponent({
     render() {
       return h(ResourcePermissionWrapper, { action }, { default: () => h(inner) })
