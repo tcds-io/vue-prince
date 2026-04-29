@@ -93,26 +93,29 @@ describe('ResourceEditPage', () => {
 
     it('passes page=EDIT to ResourceFormView', () => {
       const wrapper = mountPage()
-      expect(wrapper.findComponent(ResourceFormView).props('page')).toBe('EDIT')
+      expect(wrapper.findComponent(ResourceFormView).props('page' as any)).toBe('EDIT')
     })
 
     it('passes item to ResourceFormView after load', async () => {
       store.get.mockResolvedValue({ data: { id: 1, name: 'Acme' }, meta: null })
       const wrapper = mountPage()
       await flushPromises()
-      expect(wrapper.findComponent(ResourceFormView).props('item')).toEqual({ id: 1, name: 'Acme' })
+      expect(wrapper.findComponent(ResourceFormView).props('item' as any)).toEqual({
+        id: 1,
+        name: 'Acme',
+      })
     })
 
     it('passes loading state to ResourceFormView', () => {
       store.loading = true
       const wrapper = mountPage()
-      expect(wrapper.findComponent(ResourceFormView).props('loading')).toBe(true)
+      expect(wrapper.findComponent(ResourceFormView).props('loading' as any)).toBe(true)
     })
 
     it('passes error to ResourceFormView', () => {
       store.error = 'Server error'
       const wrapper = mountPage()
-      expect(wrapper.findComponent(ResourceFormView).props('error')).toBe('Server error')
+      expect(wrapper.findComponent(ResourceFormView).props('error' as any)).toBe('Server error')
     })
 
     it('submit event calls store.update and navigates to detail', async () => {

@@ -73,12 +73,12 @@ describe('ResourceDeletePage', () => {
       store.get.mockResolvedValue({ data: { id: 1, name: 'Acme Corp' }, meta: null })
       const wrapper = mountPage()
       await flushPromises()
-      expect(wrapper.findComponent(PrinceCard).props('title')).toBe('Delete Acme Corp')
+      expect(wrapper.findComponent(PrinceCard).props('title' as any)).toBe('Delete Acme Corp')
     })
 
     it('renders a PrinceCard with the raw id when item is not yet loaded', () => {
       const wrapper = mountPage(BASE_SPEC, '5')
-      expect(wrapper.findComponent(PrinceCard).props('title')).toBe('Delete 5')
+      expect(wrapper.findComponent(PrinceCard).props('title' as any)).toBe('Delete 5')
     })
 
     it('passes loading to PrinceCard body (loading prop on store)', () => {

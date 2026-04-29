@@ -133,7 +133,9 @@ describe('createResourceApi', () => {
     })
 
     it('returns null on 204 No Content', async () => {
-      global.fetch = vi.fn().mockResolvedValue({ status: 204, ok: true, json: () => Promise.resolve(null) })
+      global.fetch = vi
+        .fn()
+        .mockResolvedValue({ status: 204, ok: true, json: () => Promise.resolve(null) })
       const result = await makeApi().update(1, {} as any)
       expect(result).toBeNull()
     })
