@@ -95,7 +95,7 @@ describe('ResourceDetailPage', () => {
       store.get.mockResolvedValue({ data: { id: 1, name: 'Acme' }, meta: null })
       const wrapper = mountPage()
       await flushPromises()
-      expect(wrapper.findComponent(ResourceDetailView).props('item')).toEqual({
+      expect(wrapper.findComponent(ResourceDetailView).props('item' as any)).toEqual({
         id: 1,
         name: 'Acme',
       })
@@ -104,18 +104,18 @@ describe('ResourceDetailPage', () => {
     it('passes loading to ResourceDetailView', () => {
       store.loading = true
       const wrapper = mountPage()
-      expect(wrapper.findComponent(ResourceDetailView).props('loading')).toBe(true)
+      expect(wrapper.findComponent(ResourceDetailView).props('loading' as any)).toBe(true)
     })
 
     it('passes error to ResourceDetailView', () => {
       store.error = 'not found'
       const wrapper = mountPage()
-      expect(wrapper.findComponent(ResourceDetailView).props('error')).toBe('not found')
+      expect(wrapper.findComponent(ResourceDetailView).props('error' as any)).toBe('not found')
     })
 
     it('passes resource name', () => {
       const wrapper = mountPage()
-      expect(wrapper.findComponent(ResourceDetailView).props('resource')).toBe('company')
+      expect(wrapper.findComponent(ResourceDetailView).props('resource' as any)).toBe('company')
     })
   })
 

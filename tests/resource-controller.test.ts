@@ -204,7 +204,10 @@ describe('createResourceController', () => {
       const { store: useStore } = createResourceController(makeSpec())
       const store = useStore()
       // Seed state from a previous successful load
-      global.fetch = mockFetchWithSchema({ data: [{ id: 1, _resource: 'company' }], meta: { current_page: 1, total: 1, last_page: 1, per_page: 15 } })
+      global.fetch = mockFetchWithSchema({
+        data: [{ id: 1, _resource: 'company' }],
+        meta: { current_page: 1, total: 1, last_page: 1, per_page: 15 },
+      })
       await store.list()
       expect(store.items).toHaveLength(1)
       // Now fail
@@ -369,7 +372,11 @@ describe('createResourceController', () => {
           ok: true,
           json: () => Promise.resolve({ schema: [], permissions: {} }),
         })
-        .mockResolvedValueOnce({ status: 200, ok: true, json: () => Promise.resolve({ data, meta: {} }) })
+        .mockResolvedValueOnce({
+          status: 200,
+          ok: true,
+          json: () => Promise.resolve({ data, meta: {} }),
+        })
         .mockResolvedValueOnce({ status: 204, ok: true })
       const { store: useStore } = createResourceController(makeSpec())
       const store = useStore()
@@ -537,7 +544,11 @@ describe('createResourceController', () => {
 
     it('denies an action not listed in spec.permissions even without userPermissions config', async () => {
       configureVuePrince({ api: { baseUrl: 'https://api.example.com' } })
-      const spec = { ...makeSpec(), fields: { name: { type: 'string' as const } }, permissions: { read: 'r' } }
+      const spec = {
+        ...makeSpec(),
+        fields: { name: { type: 'string' as const } },
+        permissions: { read: 'r' },
+      }
       const { store: useStore } = createResourceController(spec)
       const store = useStore()
       // create is not in spec.permissions → should be denied
@@ -546,7 +557,10 @@ describe('createResourceController', () => {
     })
 
     it('denies an action not listed in the schema permissions response', async () => {
-      configureVuePrince({ api: { baseUrl: 'https://api.example.com' }, userPermissions: () => ['r'] })
+      configureVuePrince({
+        api: { baseUrl: 'https://api.example.com' },
+        userPermissions: () => ['r'],
+      })
       // schema only lists read — create is missing → denied
       global.fetch = mockFetchWithSchema({ data: { id: 1 }, meta: {} }, 200, { read: 'r' })
       const { store: useStore } = createResourceController(makeSpec())

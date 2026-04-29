@@ -89,24 +89,24 @@ describe('ResourceCreatePage', () => {
 
     it('passes page=CREATE to ResourceFormView', () => {
       const wrapper = mountPage()
-      expect(wrapper.findComponent(ResourceFormView).props('page')).toBe('CREATE')
+      expect(wrapper.findComponent(ResourceFormView).props('page' as any)).toBe('CREATE')
     })
 
     it('passes null item to ResourceFormView', () => {
       const wrapper = mountPage()
-      expect(wrapper.findComponent(ResourceFormView).props('item')).toBeNull()
+      expect(wrapper.findComponent(ResourceFormView).props('item' as any)).toBeNull()
     })
 
     it('passes loading state to ResourceFormView', () => {
       store.loading = true
       const wrapper = mountPage()
-      expect(wrapper.findComponent(ResourceFormView).props('loading')).toBe(true)
+      expect(wrapper.findComponent(ResourceFormView).props('loading' as any)).toBe(true)
     })
 
     it('passes error to ResourceFormView', () => {
       store.error = 'fail'
       const wrapper = mountPage()
-      expect(wrapper.findComponent(ResourceFormView).props('error')).toBe('fail')
+      expect(wrapper.findComponent(ResourceFormView).props('error' as any)).toBe('fail')
     })
 
     it('submit event calls store.create and navigates to detail', async () => {

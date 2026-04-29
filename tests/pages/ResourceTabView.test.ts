@@ -114,7 +114,7 @@ describe('ResourceTabView', () => {
     })
     await flushPromises()
     mockList.mockClear()
-    await wrapper.setProps({ resourceId: 99 })
+    await wrapper.setProps({ resourceId: 99 } as any)
     await flushPromises()
     expect(mockList).toHaveBeenCalledWith({ company_id: '99', page: '1' })
   })

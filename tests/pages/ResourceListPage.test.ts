@@ -114,24 +114,24 @@ describe('ResourceListPage', () => {
     it('passes store.loading to ResourceListView', () => {
       store.loading = true
       const wrapper = mountPage()
-      expect(wrapper.findComponent(ResourceListView).props('loading')).toBe(true)
+      expect(wrapper.findComponent(ResourceListView).props('loading' as any)).toBe(true)
     })
 
     it('passes store.error to ResourceListView', () => {
       store.error = 'oops'
       const wrapper = mountPage()
-      expect(wrapper.findComponent(ResourceListView).props('error')).toBe('oops')
+      expect(wrapper.findComponent(ResourceListView).props('error' as any)).toBe('oops')
     })
 
     it('passes spec.name as resource to ResourceListView', () => {
       const wrapper = mountPage()
-      expect(wrapper.findComponent(ResourceListView).props('resource')).toBe('company')
+      expect(wrapper.findComponent(ResourceListView).props('resource' as any)).toBe('company')
     })
 
     it('row click on ResourceListView navigates to detail', async () => {
       const wrapper = mountPage()
       await flushPromises()
-      const onRowClick = wrapper.findComponent(ResourceListView).props('onRowClick') as (
+      const onRowClick = wrapper.findComponent(ResourceListView).props('onRowClick' as any) as (
         item: Record<string, unknown>,
       ) => void
       onRowClick({ id: 5 })
