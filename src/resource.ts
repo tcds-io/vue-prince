@@ -112,6 +112,7 @@ export type ResourceSpec<T = Record<string, unknown>> = {
   route: string
   api: () => ResourceApi
   fields?: Record<string, ResourceFieldDef>
+  permissions?: Record<string, string>
   title?: (item: T) => string
   components?: ResourcePageComponents
   tabs?: readonly ResourceTab[]
@@ -147,7 +148,7 @@ type AnyTypeRef = SpecFieldType | (() => ResourceSpec)
 
 export function hasPermission(schemaPermissions: Record<string, string>, action: string): boolean {
   const required = schemaPermissions[action]
-  if (!required) return true
+  if (!required || required === 'public') return true
   const perms = getConfig().userPermissions?.()
   return perms ? perms.includes(required) : true
 }
@@ -158,7 +159,8 @@ export function hasPermission(schemaPermissions: Record<string, string>, action:
 export function defineResource<
   const F extends Record<string, AnyTypeRef> = Record<never, AnyTypeRef>,
 >(
-  spec: Omit<ResourceSpec, 'fields' | 'title'> & {
+  spec: Omit<ResourceSpec, 'fields' | 'title' | 'permissions'> & {
+    permissions?: Record<string, string>
     fields?: {
       [K in keyof F]: Omit<ResourceFieldDef, 'type' | 'list' | 'form'> & {
         type: F[K]
@@ -172,14 +174,16 @@ export function defineResource<
     }
     title?: (item: { [K in keyof F]: FieldTypeToTs<F[K]> }) => unknown
   },
-): Omit<ResourceSpec, 'fields' | 'title'> & {
+): Omit<ResourceSpec, 'fields' | 'title' | 'permissions'> & {
   fields?: { [K in keyof F]: Omit<ResourceFieldDef, 'type'> & { type: F[K] } }
+  permissions?: Record<string, string>
   title?: (item: Record<string, unknown>) => string
   route: string
   api: () => ResourceApi
 } {
-  return spec as Omit<ResourceSpec, 'fields' | 'title'> & {
+  return spec as Omit<ResourceSpec, 'fields' | 'title' | 'permissions'> & {
     fields?: { [K in keyof F]: Omit<ResourceFieldDef, 'type'> & { type: F[K] } }
+    permissions?: Record<string, string>
     title?: (item: Record<string, unknown>) => string
     route: string
     api: () => ResourceApi
