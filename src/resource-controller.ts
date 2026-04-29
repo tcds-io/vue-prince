@@ -8,7 +8,12 @@ import type {
   ResourceMetadata,
   ResourceSchemaField,
 } from './api'
-import type { InferResourceListModel, InferResourceModel, ResourceSpec } from './resource'
+import type {
+  InferResourceListModel,
+  InferResourceModel,
+  ResourcePermissions,
+  ResourceSpec,
+} from './resource'
 import { hasPermission } from './resource'
 
 export function createResourceController<const S extends ResourceSpec>(spec: S) {
@@ -21,7 +26,7 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
     const items = ref<ResourceListItem<ListModel>[]>([])
     const itemsMeta = ref<ResourceListMetadata | null>(null)
     const schemaFields = ref<ResourceSchemaField[]>([])
-    const schemaPermissions = ref<Record<string, string>>(spec.permissions ?? {})
+    const schemaPermissions = ref<ResourcePermissions>(spec.permissions ?? {})
     // Schema is already complete when the spec supplies both fields and permissions.
     const schemaLoaded = ref(!!(spec.fields && spec.permissions))
     const loading = ref(false)
@@ -40,7 +45,7 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
           const result = await api.schema()
           schemaFields.value = result.fields
           // Spec-level permissions take precedence over the API response.
-          if (!spec.permissions) schemaPermissions.value = result.permissions
+          if (!spec.permissions) schemaPermissions.value = result.permissions as ResourcePermissions
           schemaLoaded.value = true
         } catch (e) {
           error.value = String(e)
