@@ -96,6 +96,7 @@ export type ResourceTab = {
   component: () => Component
   foreignKey?: string
   label?: string
+  permission?: string
 }
 
 export type ResourcePageComponents = {
