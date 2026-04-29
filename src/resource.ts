@@ -154,11 +154,13 @@ export type ResourcePermissions = {
 }
 
 export function hasPermission(
-  permissions: ResourcePermissions,
+  permissions: ResourcePermissions | null,
   action: keyof ResourcePermissions,
 ): boolean {
+  if (!permissions || Object.keys(permissions).length === 0) return true
   const required = permissions[action]
-  if (!required || required === 'public') return true
+  if (required === undefined) return false
+  if (required === 'public') return true
   const perms = getConfig().userPermissions?.()
   return perms ? perms.includes(required) : true
 }
