@@ -12,6 +12,7 @@ function makeSpec(path = BASE_API) {
 function mockFetch(body: unknown, status = 200) {
   return vi.fn().mockResolvedValue({
     status,
+    ok: status >= 200 && status < 300,
     json: () => Promise.resolve(body),
   })
 }
@@ -26,10 +27,12 @@ function mockFetchWithSchema(
     .fn()
     .mockResolvedValueOnce({
       status: 200,
+      ok: true,
       json: () => Promise.resolve({ schema: [], permissions: schemaPermissions }),
     })
     .mockResolvedValue({
       status: dataStatus,
+      ok: dataStatus >= 200 && dataStatus < 300,
       json: () => Promise.resolve(dataBody),
     })
 }
@@ -86,6 +89,62 @@ describe('createResourceController', () => {
       expect(global.fetch).toHaveBeenCalledTimes(1)
     })
 
+    it('never fetches schema when spec provides both fields and permissions', async () => {
+      global.fetch = vi.fn()
+      const spec = {
+        ...makeSpec(),
+        fields: { name: { type: 'string' as const } },
+        permissions: { read: 'view_companies' },
+      }
+      const { store: useStore } = createResourceController(spec)
+      const store = useStore()
+      expect(store.schemaLoaded).toBe(true)
+      await store.fetchSchema()
+      expect(global.fetch).not.toHaveBeenCalled()
+    })
+
+    it('still fetches schema when spec has fields but no permissions', async () => {
+      global.fetch = mockFetch({ schema: [], permissions: { read: 'view' } })
+      const spec = { ...makeSpec(), fields: { name: { type: 'string' as const } } }
+      const { store: useStore } = createResourceController(spec)
+      const store = useStore()
+      expect(store.schemaLoaded).toBe(false)
+      await store.fetchSchema()
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+      expect(store.schemaPermissions).toEqual({ read: 'view' })
+    })
+
+    it('still fetches schema when spec has permissions but no fields', async () => {
+      global.fetch = mockFetch({ schema: [{ name: 'id', type: 'integer' }], permissions: {} })
+      const spec = { ...makeSpec(), permissions: { read: 'view_companies' } }
+      const { store: useStore } = createResourceController(spec)
+      const store = useStore()
+      expect(store.schemaLoaded).toBe(false)
+      await store.fetchSchema()
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('spec permissions take precedence over api response permissions', async () => {
+      global.fetch = mockFetch({ schema: [], permissions: { read: 'api_permission' } })
+      const spec = { ...makeSpec(), permissions: { read: 'spec_permission' } }
+      const { store: useStore } = createResourceController(spec)
+      const store = useStore()
+      await store.fetchSchema()
+      expect(store.schemaPermissions).toEqual({ read: 'spec_permission' })
+    })
+
+    it('initializes schemaPermissions from spec.permissions', () => {
+      global.fetch = vi.fn()
+      const spec = {
+        ...makeSpec(),
+        fields: { name: { type: 'string' as const } },
+        permissions: { read: 'view_companies', create: 'create_company' },
+      }
+      const { store: useStore } = createResourceController(spec)
+      const store = useStore()
+      expect(store.schemaPermissions).toEqual({ read: 'view_companies', create: 'create_company' })
+    })
+
     it('sets error on network failure', async () => {
       global.fetch = vi.fn().mockRejectedValue(new Error('Network error'))
       const { store: useStore } = createResourceController(makeSpec())
@@ -131,6 +190,7 @@ describe('createResourceController', () => {
         .fn()
         .mockResolvedValueOnce({
           status: 200,
+          ok: true,
           json: () => Promise.resolve({ schema: [], permissions: {} }),
         })
         .mockRejectedValueOnce(new Error('Timeout'))
@@ -138,6 +198,20 @@ describe('createResourceController', () => {
       const store = useStore()
       await store.list()
       expect(store.error).toContain('Timeout')
+    })
+
+    it('resets items to [] and itemsMeta to null on failure', async () => {
+      const { store: useStore } = createResourceController(makeSpec())
+      const store = useStore()
+      // Seed state from a previous successful load
+      global.fetch = mockFetchWithSchema({ data: [{ id: 1, _resource: 'company' }], meta: { current_page: 1, total: 1, last_page: 1, per_page: 15 } })
+      await store.list()
+      expect(store.items).toHaveLength(1)
+      // Now fail
+      global.fetch = vi.fn().mockRejectedValue(new Error('Network'))
+      await store.list()
+      expect(store.items).toEqual([])
+      expect(store.itemsMeta).toBeNull()
     })
   })
 
@@ -218,14 +292,16 @@ describe('createResourceController', () => {
         .mockResolvedValueOnce({
           // schema (reused by both list and remove)
           status: 200,
+          ok: true,
           json: () => Promise.resolve({ schema: [], permissions: {} }),
         })
         .mockResolvedValueOnce({
           // list data
           status: 200,
+          ok: true,
           json: () => Promise.resolve({ data, meta: {} }),
         })
-        .mockResolvedValueOnce({ status: 204 }) // remove
+        .mockResolvedValueOnce({ status: 204, ok: true }) // remove
       const { store: useStore } = createResourceController(makeSpec())
       const store = useStore()
       await store.list()
@@ -290,10 +366,11 @@ describe('createResourceController', () => {
         .fn()
         .mockResolvedValueOnce({
           status: 200,
+          ok: true,
           json: () => Promise.resolve({ schema: [], permissions: {} }),
         })
-        .mockResolvedValueOnce({ status: 200, json: () => Promise.resolve({ data, meta: {} }) })
-        .mockResolvedValueOnce({ status: 204 })
+        .mockResolvedValueOnce({ status: 200, ok: true, json: () => Promise.resolve({ data, meta: {} }) })
+        .mockResolvedValueOnce({ status: 204, ok: true })
       const { store: useStore } = createResourceController(makeSpec())
       const store = useStore()
       await store.list()
@@ -435,12 +512,23 @@ describe('createResourceController', () => {
         .fn()
         .mockResolvedValueOnce({
           status: 200,
+          ok: true,
           json: () => Promise.resolve({ schema: [], permissions: { read: 'r' } }),
         })
         .mockResolvedValueOnce({
           status: 200,
+          ok: true,
           json: () => Promise.resolve({ data: [], meta: {} }),
         })
+      const { store: useStore } = createResourceController(restrictedSpec)
+      const store = useStore()
+      await store.list()
+      expect(store.error).toBeNull()
+    })
+
+    it('grants access when permission is "public" regardless of user permissions', async () => {
+      configureVuePrince({ api: { baseUrl: 'https://api.example.com' }, userPermissions: () => [] })
+      global.fetch = mockFetchWithSchema({ data: [], meta: {} }, 200, { read: 'public' })
       const { store: useStore } = createResourceController(restrictedSpec)
       const store = useStore()
       await store.list()

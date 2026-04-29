@@ -21,8 +21,9 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
     const items = ref<ResourceListItem<ListModel>[]>([])
     const itemsMeta = ref<ResourceListMetadata | null>(null)
     const schemaFields = ref<ResourceSchemaField[]>([])
-    const schemaPermissions = ref<Record<string, string>>({})
-    const schemaLoaded = ref(false)
+    const schemaPermissions = ref<Record<string, string>>(spec.permissions ?? {})
+    // Schema is already complete when the spec supplies both fields and permissions.
+    const schemaLoaded = ref(!!(spec.fields && spec.permissions))
     const loading = ref(false)
     const error = ref<string | null>(null)
 
@@ -38,7 +39,8 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
         try {
           const result = await api.schema()
           schemaFields.value = result.fields
-          schemaPermissions.value = result.permissions
+          // Spec-level permissions take precedence over the API response.
+          if (!spec.permissions) schemaPermissions.value = result.permissions
           schemaLoaded.value = true
         } catch (e) {
           error.value = String(e)
@@ -62,6 +64,8 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
         itemsMeta.value = res.meta
       } catch (e) {
         error.value = String(e)
+        items.value = []
+        itemsMeta.value = null
       } finally {
         loading.value = false
       }
