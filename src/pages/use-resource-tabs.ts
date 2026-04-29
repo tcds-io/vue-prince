@@ -15,6 +15,7 @@ export type ResolvedTab = {
   label: string
   component: Component
   foreignKey: string
+  permission?: string
 }
 
 export function useResourceTabs(parentSpec: ResourceSpec): { tabs: ResolvedTab[] } {
@@ -22,6 +23,7 @@ export function useResourceTabs(parentSpec: ResourceSpec): { tabs: ResolvedTab[]
     label: tab.label ?? 'Tab',
     component: tab.component(),
     foreignKey: tab.foreignKey ?? `${parentSpec.name}_id`,
+    permission: tab.permission,
   }))
   return { tabs }
 }
