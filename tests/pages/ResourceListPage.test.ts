@@ -20,7 +20,7 @@ function makeStore(overrides: Record<string, unknown> = {}) {
     schemaFields: [] as unknown[],
     schemaPermissions: {} as Record<string, string>,
     schemaLoaded: true,
-    loading: false,
+    loading: { schema: false, list: false, get: false, create: false, update: false, remove: false, createMany: false, updateMany: false, removeMany: false },
     error: null as string | null,
     fetchSchema: vi.fn().mockResolvedValue(undefined),
     list: vi.fn().mockResolvedValue(undefined),
@@ -112,7 +112,7 @@ describe('ResourceListPage', () => {
     })
 
     it('passes store.loading to ResourceListView', () => {
-      store.loading = true
+      store.loading.list = true
       const wrapper = mountPage()
       expect(wrapper.findComponent(ResourceListView).props('loading' as any)).toBe(true)
     })
@@ -156,7 +156,7 @@ describe('ResourceListPage', () => {
     })
 
     it('passes loading state', () => {
-      store.loading = true
+      store.loading.list = true
       const wrapper = mountCustom()
       expect((wrapper.findComponent(CustomList).vm.$attrs as any).loading).toBe(true)
     })

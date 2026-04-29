@@ -14,7 +14,7 @@ export type ResourceApi<Model extends object = Record<string, unknown>> = {
   remove(id: ResourceId): Promise<void>
   createMany(data: Partial<Model>[]): Promise<ResourceResponse<Model>[]>
   updateMany(data: (Partial<Model> & { id: ResourceId })[]): Promise<void>
-  deleteMany(ids: ResourceId[]): Promise<void>
+  removeMany(ids: ResourceId[]): Promise<void>
 }
 export type ResourceFieldType = 'integer' | 'number' | 'text' | 'datetime' | 'enum' | (string & {})
 export type ResourceSchemaField = { name: string; type: ResourceFieldType; values?: string[] }

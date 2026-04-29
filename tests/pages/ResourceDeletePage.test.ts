@@ -18,7 +18,7 @@ function makeStore(overrides: Record<string, unknown> = {}) {
     schemaFields: [] as unknown[],
     schemaPermissions: {} as Record<string, string>,
     schemaLoaded: true,
-    loading: false,
+    loading: { schema: false, list: false, get: false, create: false, update: false, remove: false, createMany: false, updateMany: false, removeMany: false },
     error: null as string | null,
     fetchSchema: vi.fn().mockResolvedValue(undefined),
     list: vi.fn().mockResolvedValue(undefined),
@@ -82,7 +82,7 @@ describe('ResourceDeletePage', () => {
     })
 
     it('passes loading to PrinceCard body (loading prop on store)', () => {
-      store.loading = true
+      store.loading.remove = true
       const wrapper = mountPage()
       expect(wrapper.findComponent(PrinceCard).exists()).toBe(true)
     })
@@ -136,7 +136,7 @@ describe('ResourceDeletePage', () => {
     })
 
     it('passes loading and error from store', () => {
-      store.loading = true
+      store.loading.remove = true
       store.error = 'oops'
       const wrapper = mountCustom()
       const attrs = wrapper.findComponent(CustomDelete).vm.$attrs as any

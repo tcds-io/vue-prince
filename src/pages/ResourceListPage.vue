@@ -31,7 +31,7 @@
       :labels="labels"
       :fields="enrichedFields"
       :resource="route.meta.spec?.name"
-      :loading="store.loading"
+      :loading="store.loading.list"
       :error="store.error"
       :on-row-click="navigateToItem"
       :item-actions="route.meta.spec?.actions?.resource"
@@ -218,7 +218,7 @@ const customProps = computed<ResourceListPageProps>(() => ({
   labels: labels.value,
   fields: enrichedFields.value,
   resource: route.meta.spec?.name,
-  loading: store.loading,
+  loading: store.loading.list,
   error: store.error,
   itemsMeta: store.itemsMeta,
   page: page.value,

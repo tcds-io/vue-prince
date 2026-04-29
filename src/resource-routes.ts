@@ -3,6 +3,7 @@ import type { Component } from 'vue'
 import type { RouteRecordRaw } from 'vue-router'
 import type { ResourceId, ResourceListMetadata, ResourceMetadata, ResourceSchemaField } from './api'
 import type { ResourcePermissions, ResourceSpec } from './resource'
+import type { ResourceLoadingState } from './resource-controller'
 import ResourceListPage from './pages/ResourceListPage.vue'
 import ResourceDetailPage from './pages/ResourceDetailPage.vue'
 import ResourceCreatePage from './pages/ResourceCreatePage.vue'
@@ -14,22 +15,20 @@ export interface ResourcePageStore {
   items: unknown[]
   itemsMeta: ResourceListMetadata | null
   itemsById: Record<ResourceId, unknown>
-  item: unknown
-  itemMeta: ResourceMetadata | null
   schemaFields: ResourceSchemaField[]
   schemaPermissions: Record<string, string>
   schemaLoaded: boolean
-  loading: boolean
+  loading: ResourceLoadingState
   error: string | null
   fetchSchema(): Promise<void>
   list(params?: Record<string, string | number | boolean>): Promise<void>
-  get(id: ResourceId): Promise<void>
+  get(id: ResourceId): Promise<{ data: unknown; meta: ResourceMetadata } | null>
   create(data: Record<string, unknown>): Promise<unknown>
-  update(id: ResourceId, data: Record<string, unknown>): Promise<unknown>
+  update(id: ResourceId, data: Record<string, unknown>): Promise<boolean>
   remove(id: ResourceId): Promise<void>
   createMany(data: Partial<Record<string, unknown>>[]): Promise<unknown[] | undefined>
   updateMany(data: (Partial<Record<string, unknown>> & { id: ResourceId })[]): Promise<void>
-  deleteMany(ids: ResourceId[]): Promise<void>
+  removeMany(ids: ResourceId[]): Promise<void>
 }
 
 declare module 'vue-router' {

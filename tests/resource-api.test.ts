@@ -235,10 +235,10 @@ describe('createResourceApi', () => {
     })
   })
 
-  describe('deleteMany()', () => {
+  describe('removeMany()', () => {
     it('DELETEs the base URL with { data: [...] } body (no /{id} in URL)', async () => {
       global.fetch = vi.fn().mockResolvedValue({ status: 204, ok: true })
-      await makeApi().deleteMany([1, 2, 3])
+      await makeApi().removeMany([1, 2, 3])
       const [url, options] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0]
       expect(url).toBe('https://api.example.com/api/companies')
       expect(options.method).toBe('DELETE')

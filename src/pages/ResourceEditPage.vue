@@ -7,7 +7,7 @@
     :labels="labels"
     :fields="route.meta.spec?.fields"
     :resource="route.meta.spec?.name"
-    :loading="store.loading"
+    :loading="store.loading.get || store.loading.update"
     :error="store.error"
     :item-title="itemTitle"
     :validation-schema="route.meta.spec?.validationSchema"
@@ -74,7 +74,7 @@ const customProps = computed<ResourceEditPageProps>(() => ({
   schema: schema.value,
   labels: labels.value,
   resource: route.meta.spec?.name,
-  loading: store.loading,
+  loading: store.loading.get || store.loading.update,
   error: store.error,
   itemTitle: itemTitle.value,
   submit,

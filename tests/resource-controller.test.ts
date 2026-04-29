@@ -52,7 +52,7 @@ describe('createResourceController', () => {
     expect(store.schemaFields).toEqual([])
     expect(store.schemaPermissions).toBeNull()
     expect(store.schemaLoaded).toBe(false)
-    expect(store.loading).toBe(false)
+    expect(store.loading.list).toBe(false)
     expect(store.error).toBeNull()
   })
 
@@ -151,7 +151,7 @@ describe('createResourceController', () => {
       const store = useStore()
       await store.fetchSchema()
       expect(store.error).toContain('Network error')
-      expect(store.loading).toBe(false)
+      expect(store.loading.schema).toBe(false)
       expect(store.schemaLoaded).toBe(false)
     })
   })
@@ -345,7 +345,7 @@ describe('createResourceController', () => {
       const store = useStore()
       await store.updateMany([{ id: 1, name: 'Updated' }])
       expect(store.error).toBeNull()
-      expect(store.loading).toBe(false)
+      expect(store.loading.updateMany).toBe(false)
     })
 
     it('sets error when update permission is missing', async () => {
@@ -358,7 +358,7 @@ describe('createResourceController', () => {
     })
   })
 
-  describe('deleteMany()', () => {
+  describe('removeMany()', () => {
     it('removes matching items from the list', async () => {
       const data = [
         { id: 1, name: 'Acme', _resource: 'company' },
@@ -381,7 +381,7 @@ describe('createResourceController', () => {
       const { store: useStore } = createResourceController(makeSpec())
       const store = useStore()
       await store.list()
-      await store.deleteMany([1, 3])
+      await store.removeMany([1, 3])
       expect(store.items).toHaveLength(1)
       expect((store.items[0] as any).id).toBe(2)
     })
@@ -391,7 +391,7 @@ describe('createResourceController', () => {
       configureVuePrince({ api: { baseUrl: 'https://api.example.com' }, userPermissions: () => [] })
       const { store: useStore } = createResourceController(makeSpec('/api/companies-batch-delete'))
       const store = useStore()
-      await store.deleteMany([1, 2])
+      await store.removeMany([1, 2])
       expect(store.error).toContain('Permission denied: delete')
     })
   })
@@ -418,7 +418,7 @@ describe('createResourceController', () => {
   })
 
   describe('loading state', () => {
-    it('is true while a fetch is in-flight and false after', async () => {
+    it('loading.list is true while list is in-flight and false after', async () => {
       let resolve: (v: any) => void
       const pending = new Promise((r) => {
         resolve = r
@@ -427,18 +427,18 @@ describe('createResourceController', () => {
       const { store: useStore } = createResourceController(makeSpec())
       const store = useStore()
       const promise = store.list()
-      expect(store.loading).toBe(true)
+      expect(store.loading.list).toBe(true)
       resolve!({ status: 200, json: () => Promise.resolve({ schema: [], data: [], meta: {} }) })
       await promise
-      expect(store.loading).toBe(false)
+      expect(store.loading.list).toBe(false)
     })
 
-    it('resets to false after an error', async () => {
+    it('resets loading.list to false after an error', async () => {
       global.fetch = vi.fn().mockRejectedValue(new Error('fail'))
       const { store: useStore } = createResourceController(makeSpec())
       const store = useStore()
       await store.list()
-      expect(store.loading).toBe(false)
+      expect(store.loading.list).toBe(false)
     })
   })
 
@@ -502,12 +502,12 @@ describe('createResourceController', () => {
       expect(store.error).toContain('Permission denied: delete')
     })
 
-    it('resets loading to false after permission denial', async () => {
+    it('resets loading.list to false after permission denial', async () => {
       global.fetch = mockRestrictedSchema()
       const { store: useStore } = createResourceController(restrictedSpec)
       const store = useStore()
       await store.list()
-      expect(store.loading).toBe(false)
+      expect(store.loading.list).toBe(false)
     })
 
     it('allows calls when user has the required permission', async () => {

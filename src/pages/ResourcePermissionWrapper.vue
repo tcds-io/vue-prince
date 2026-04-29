@@ -23,7 +23,7 @@ onMounted(() => {
 })
 
 // True only while the very first schema fetch is in flight
-const schemaLoading = computed(() => !!store && !store.schemaLoaded && store.loading)
+const schemaLoading = computed(() => !!store && !store.schemaLoaded && store.loading.schema)
 
 const allowed = computed(() => {
   if (!props.action || !store) return true

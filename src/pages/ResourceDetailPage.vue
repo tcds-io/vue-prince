@@ -7,7 +7,7 @@
       :labels="labels"
       :fields="route.meta.spec?.fields"
       :resource="route.meta.spec?.name"
-      :loading="store.loading"
+      :loading="store.loading.get"
       :error="store.error"
       :item-title="itemTitle"
     >
@@ -108,7 +108,7 @@ const customProps = computed<ResourceViewPageProps>(() => ({
   schema: schema.value,
   labels: labels.value,
   resource: route.meta.spec?.name,
-  loading: store.loading,
+  loading: store.loading.get,
   error: store.error,
   itemTitle: itemTitle.value,
   back,

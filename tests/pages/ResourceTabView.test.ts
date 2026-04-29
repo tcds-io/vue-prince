@@ -38,7 +38,7 @@ beforeEach(() => {
     store: () => ({
       schemaPermissions: {},
       schemaLoaded: true,
-      loading: false,
+      loading: { schema: false, list: false, get: false, create: false, update: false, remove: false, createMany: false, updateMany: false, removeMany: false },
       fetchSchema: vi.fn().mockResolvedValue(undefined),
     }),
   } as any)

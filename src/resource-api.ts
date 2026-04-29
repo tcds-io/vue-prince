@@ -115,7 +115,7 @@ export function createResourceApi(options: {
       assertOk(response)
     },
 
-    async deleteMany(ids) {
+    async removeMany(ids) {
       const response = await fetch(`${getBase()}${options.path}`, {
         method: 'DELETE',
         headers: getHeaders(),

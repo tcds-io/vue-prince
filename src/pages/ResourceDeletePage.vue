@@ -1,7 +1,7 @@
 <template>
   <component :is="customComponent" v-if="customComponent" v-bind="customProps" />
   <PrinceCard v-else :title="`Delete ${displayTitle}`">
-    <div v-if="store.loading">Loading…</div>
+    <div v-if="store.loading.remove">Loading…</div>
     <div v-else-if="store.error && !item" class="vue-resource prince-error">
       Failed to load {{ displayTitle }}
     </div>
@@ -64,7 +64,7 @@ const customComponent = computed(() => route.meta.spec?.components?.delete)
 const customProps = computed<ResourceDeletePageProps>(() => ({
   item: item.value,
   resource: route.meta.spec?.name,
-  loading: store.loading,
+  loading: store.loading.remove,
   error: store.error,
   itemTitle: itemTitle.value,
   cancel,
