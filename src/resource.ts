@@ -112,7 +112,7 @@ export type ResourceSpec<T = Record<string, unknown>> = {
   route: string
   api: () => ResourceApi
   fields?: Record<string, ResourceFieldDef>
-  permissions?: Record<string, string>
+  permissions?: ResourcePermissions
   title?: (item: T) => string
   components?: ResourcePageComponents
   tabs?: readonly ResourceTab[]
@@ -146,8 +146,18 @@ export type InferResourceListModel<S extends ResourceSpec> = [keyof DefinedField
 // Alias for the field type discriminant — either a primitive kind or a lazy resource reference.
 type AnyTypeRef = SpecFieldType | (() => ResourceSpec)
 
-export function hasPermission(schemaPermissions: Record<string, string>, action: string): boolean {
-  const required = schemaPermissions[action]
+export type ResourcePermissions = {
+  read?: string
+  create?: string
+  update?: string
+  delete?: string
+}
+
+export function hasPermission(
+  permissions: ResourcePermissions,
+  action: keyof ResourcePermissions,
+): boolean {
+  const required = permissions[action]
   if (!required || required === 'public') return true
   const perms = getConfig().userPermissions?.()
   return perms ? perms.includes(required) : true
@@ -160,7 +170,7 @@ export function defineResource<
   const F extends Record<string, AnyTypeRef> = Record<never, AnyTypeRef>,
 >(
   spec: Omit<ResourceSpec, 'fields' | 'title' | 'permissions'> & {
-    permissions?: Record<string, string>
+    permissions?: ResourcePermissions
     fields?: {
       [K in keyof F]: Omit<ResourceFieldDef, 'type' | 'list' | 'form'> & {
         type: F[K]
@@ -176,14 +186,14 @@ export function defineResource<
   },
 ): Omit<ResourceSpec, 'fields' | 'title' | 'permissions'> & {
   fields?: { [K in keyof F]: Omit<ResourceFieldDef, 'type'> & { type: F[K] } }
-  permissions?: Record<string, string>
+  permissions?: ResourcePermissions
   title?: (item: Record<string, unknown>) => string
   route: string
   api: () => ResourceApi
 } {
   return spec as Omit<ResourceSpec, 'fields' | 'title' | 'permissions'> & {
     fields?: { [K in keyof F]: Omit<ResourceFieldDef, 'type'> & { type: F[K] } }
-    permissions?: Record<string, string>
+    permissions?: ResourcePermissions
     title?: (item: Record<string, unknown>) => string
     route: string
     api: () => ResourceApi
