@@ -10,7 +10,9 @@ import { createResourceController } from '../resource-controller'
 import { hasPermission } from '../resource'
 import ResourcePermissionDeniedPage from './ResourcePermissionDeniedPage.vue'
 
-const props = defineProps<{ action?: string }>()
+import type { ResourcePermissions } from '../resource'
+
+const props = defineProps<{ action?: keyof ResourcePermissions }>()
 
 const route = useRoute()
 const spec = route.meta.spec
