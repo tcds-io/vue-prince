@@ -26,7 +26,7 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
     const items = ref<ResourceListItem<ListModel>[]>([])
     const itemsMeta = ref<ResourceListMetadata | null>(null)
     const schemaFields = ref<ResourceSchemaField[]>([])
-    const schemaPermissions = ref<ResourcePermissions>(spec.permissions ?? {})
+    const schemaPermissions = ref<ResourcePermissions | null>(spec.permissions ?? null)
     // Schema is already complete when the spec supplies both fields and permissions.
     const schemaLoaded = ref(!!(spec.fields && spec.permissions))
     const loading = ref(false)
