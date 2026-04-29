@@ -23,7 +23,17 @@ function makeStore(schemaPermissions: Record<string, string> = {}) {
   return reactive({
     schemaPermissions,
     schemaLoaded: true,
-    loading: { schema: false, list: false, get: false, create: false, update: false, remove: false, createMany: false, updateMany: false, removeMany: false },
+    loading: {
+      schema: false,
+      list: false,
+      get: false,
+      create: false,
+      update: false,
+      remove: false,
+      createMany: false,
+      updateMany: false,
+      removeMany: false,
+    },
     fetchSchema: vi.fn(),
   })
 }
