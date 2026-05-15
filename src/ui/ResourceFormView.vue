@@ -9,7 +9,7 @@
     >
       <component
         :is="resolveFieldComponent(fields?.[field.name]?.type ?? field.type, 'form')"
-        v-for="field in schema"
+        v-for="field in visibleSchema"
         :key="field.name"
         :value="displayFormValue(field.name)"
         :name="field.name"
@@ -91,6 +91,10 @@ const resourceLabel = computed(() => {
 })
 
 const actionVerb = computed(() => (props.page === 'CREATE' ? 'create' : 'update'))
+
+const visibleSchema = computed(() =>
+  props.schema.filter((field) => props.fields?.[field.name]?.form?.show?.(props.page) ?? true),
+)
 
 const headerTitle = computed(() =>
   props.page === 'CREATE' ? `Create ${resourceLabel.value}` : `Edit ${resourceLabel.value}`,
