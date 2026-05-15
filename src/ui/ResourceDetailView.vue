@@ -10,7 +10,7 @@
     <div v-else-if="item" class="vue-resource prince-detail-body">
       <component
         :is="resolveFieldComponent(fields?.[field.name]?.type ?? field.type, 'display')"
-        v-for="field in schema"
+        v-for="field in visibleSchema"
         :key="field.name"
         :name="field.name"
         :type="resolveDisplayType(fields?.[field.name]?.type, field.type)"
@@ -79,6 +79,10 @@ const resourceLabel = computed(() => {
   const n = props.resource ?? ''
   return n.charAt(0).toUpperCase() + n.slice(1)
 })
+
+const visibleSchema = computed(() =>
+  props.schema.filter((field) => props.fields?.[field.name]?.view?.show ?? true),
+)
 
 const headerTitle = computed(() => {
   if (props.itemTitle) return props.itemTitle

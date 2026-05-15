@@ -45,12 +45,17 @@ export type ResourceFieldDefForm = {
   formatter?: (value: AnyValue) => string
 }
 
+export type ResourceFieldDefView = {
+  show?: boolean
+}
+
 export type ResourceFieldDef = {
   type: SpecFieldType | (() => ResourceSpec)
   values?: Array<string | number>
   label?: string
   list?: ResourceFieldDefList
   form?: ResourceFieldDefForm
+  view?: ResourceFieldDefView
 }
 
 export function isResourceRef(type: unknown): type is ResourceSpec {

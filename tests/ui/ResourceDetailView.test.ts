@@ -100,6 +100,29 @@ describe('ResourceDetailView', () => {
     })
   })
 
+  describe('field visibility (view.show)', () => {
+    it('hides a field when view.show is false', () => {
+      const wrapper = mountDetail({
+        fields: { id: { type: 'integer', view: { show: false } } },
+      })
+      const names = wrapper.findAll('[name]').map((el) => el.attributes('name'))
+      expect(names).toEqual(['name'])
+    })
+
+    it('shows the field when view.show is true', () => {
+      const wrapper = mountDetail({
+        fields: { id: { type: 'integer', view: { show: true } } },
+      })
+      const names = wrapper.findAll('[name]').map((el) => el.attributes('name'))
+      expect(names).toEqual(['id', 'name'])
+    })
+
+    it('shows fields by default when view.show is not defined', () => {
+      const wrapper = mountDetail()
+      expect(wrapper.findAll('[name]')).toHaveLength(schema.length)
+    })
+  })
+
   describe('header title', () => {
     it('uses itemTitle when provided', () => {
       const wrapper = mountDetail({ itemTitle: 'Acme Corp' })
