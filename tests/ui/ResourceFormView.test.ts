@@ -109,6 +109,31 @@ describe('ResourceFormView', () => {
     })
   })
 
+  describe('field visibility (form.show)', () => {
+    it('hides a field when show returns false for the current page', () => {
+      const wrapper = mountForm({
+        fields: { status: { type: 'enum', form: { show: (page: string) => page !== 'CREATE' } } },
+      })
+      const names = wrapper.findAll('[name]').map((el) => el.attributes('name'))
+      expect(names).toEqual(['name'])
+    })
+
+    it('shows the field when show returns true', () => {
+      const wrapper = mountForm({
+        page: 'EDIT' as const,
+        item: { name: 'Acme', status: 'active' },
+        fields: { status: { type: 'enum', form: { show: (page: string) => page !== 'CREATE' } } },
+      })
+      const names = wrapper.findAll('[name]').map((el) => el.attributes('name'))
+      expect(names).toEqual(['name', 'status'])
+    })
+
+    it('shows fields by default when show is not defined', () => {
+      const wrapper = mountForm()
+      expect(wrapper.findAll('[name]')).toHaveLength(schema.length)
+    })
+  })
+
   describe('header title', () => {
     it('shows "Create {resource}" in CREATE mode', () => {
       const wrapper = mountForm()
