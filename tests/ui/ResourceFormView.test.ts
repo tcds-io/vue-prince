@@ -134,6 +134,43 @@ describe('ResourceFormView', () => {
     })
   })
 
+  describe('field readOnly', () => {
+    const findNameField = (wrapper: ReturnType<typeof mountForm>) =>
+      wrapper.findAllComponents({ name: 'TextField' }).find((f) => f.props('name') === 'name')!
+
+    it('passes readOnly=true to the field when readOnly is true', () => {
+      const wrapper = mountForm({
+        fields: { name: { type: 'string', form: { readOnly: true } } },
+      })
+      expect(findNameField(wrapper).props('readOnly')).toBe(true)
+    })
+
+    it('resolves readOnly via function for the current page (EDIT)', () => {
+      const wrapper = mountForm({
+        page: 'EDIT' as const,
+        item: { name: 'Acme', status: 'active' },
+        fields: {
+          name: { type: 'string', form: { readOnly: (page: string) => page === 'EDIT' } },
+        },
+      })
+      expect(findNameField(wrapper).props('readOnly')).toBe(true)
+    })
+
+    it('resolves readOnly via function for the current page (CREATE)', () => {
+      const wrapper = mountForm({
+        fields: {
+          name: { type: 'string', form: { readOnly: (page: string) => page === 'EDIT' } },
+        },
+      })
+      expect(findNameField(wrapper).props('readOnly')).toBe(false)
+    })
+
+    it('defaults readOnly to false when not defined', () => {
+      const wrapper = mountForm()
+      expect(findNameField(wrapper).props('readOnly')).toBe(false)
+    })
+  })
+
   describe('header title', () => {
     it('shows "Create {resource}" in CREATE mode', () => {
       const wrapper = mountForm()

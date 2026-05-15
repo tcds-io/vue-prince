@@ -18,7 +18,7 @@
         :label="labels?.[field.name] ?? toFieldLabel(field.name)"
         :page="page"
         :options="fields?.[field.name]?.values ?? field.values ?? []"
-        :read-only="fields?.[field.name]?.form?.readOnly ?? false"
+        :read-only="isFieldReadOnly(field.name)"
         :error="fieldErrors[field.name]"
         v-bind="getResourceFieldProps(fields?.[field.name]?.type)"
         @update:value="onFieldUpdate(field.name, $event)"
@@ -96,6 +96,12 @@ const visibleSchema = computed(() =>
   props.schema.filter((field) => props.fields?.[field.name]?.form?.show?.(props.page) ?? true),
 )
 
+function isFieldReadOnly(name: string): boolean {
+  const readOnly = props.fields?.[name]?.form?.readOnly
+  if (typeof readOnly === 'function') return readOnly(props.page)
+  return readOnly ?? false
+}
+
 const headerTitle = computed(() =>
   props.page === 'CREATE' ? `Create ${resourceLabel.value}` : `Edit ${resourceLabel.value}`,
 )
@@ -104,8 +110,8 @@ function displayFormValue(name: string): unknown {
   const raw = formData[name]
   const fieldDef = props.fields?.[name]
   if (
-    fieldDef?.form?.readOnly &&
-    fieldDef.form.formatter &&
+    isFieldReadOnly(name) &&
+    fieldDef?.form?.formatter &&
     !isResourceRef(resolveFieldType(fieldDef.type))
   )
     return fieldDef.form.formatter(raw)

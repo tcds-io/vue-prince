@@ -40,7 +40,7 @@ export type ResourceFieldDefList = {
 }
 
 export type ResourceFieldDefForm = {
-  readOnly?: boolean
+  readOnly?: boolean | ((page: 'CREATE' | 'EDIT') => boolean)
   show?: (page: 'CREATE' | 'EDIT') => boolean
   formatter?: (value: AnyValue) => string
 }
