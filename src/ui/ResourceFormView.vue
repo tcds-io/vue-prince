@@ -1,7 +1,6 @@
 <template>
   <PrinceCard :title="headerTitle">
     <div v-if="loading">Loading…</div>
-    <!-- Consumer-rendered Submit buttons trigger this form by setting form="prince-resource-form". -->
     <form
       v-else
       id="prince-resource-form"
@@ -29,7 +28,7 @@
       </div>
     </form>
 
-    <template v-if="!hideActions" #footer>
+    <template #footer>
       <slot name="actions">
         <PrinceButton type="Cancel" @click="emit('cancel')" />
         <PrinceButton type="Submit" form="prince-resource-form" />
@@ -79,7 +78,6 @@ const props = defineProps<{
   page: Extract<FieldPage, 'CREATE' | 'EDIT'>
   itemTitle?: string
   validationSchema?: ValidationSchema
-  hideActions?: boolean
 }>()
 
 const emit = defineEmits<{

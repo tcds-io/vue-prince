@@ -9,7 +9,6 @@
     :error="error"
     :item-title="itemTitle"
     :validation-schema="validationSchema"
-    :hide-actions="hideActions"
     page="EDIT"
     @submit="(data) => emit('submit', data)"
     @cancel="() => emit('cancel')"
@@ -33,7 +32,6 @@ defineProps<{
   error: string | null
   itemTitle?: string
   validationSchema?: ValidationSchema
-  hideActions?: boolean
 }>()
 
 const emit = defineEmits<{

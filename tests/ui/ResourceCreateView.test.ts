@@ -61,14 +61,6 @@ describe('ResourceCreateView', () => {
     await wrapper.findComponent(ResourceFormView).vm.$emit('cancel')
     expect(wrapper.emitted('cancel')).toBeTruthy()
   })
-
-  it('passes hideActions through to the inner form view', () => {
-    const wrapper = shallowMount(ResourceCreateView, {
-      global: { stubs: { PrinceCard: cardStub } },
-      props: { ...baseProps, hideActions: true },
-    })
-    expect(wrapper.findComponent(ResourceFormView).props('hideActions' as any)).toBe(true)
-  })
 })
 
 describe('ResourceEditView', () => {
@@ -107,14 +99,6 @@ describe('ResourceEditView', () => {
     await wrapper.findComponent(ResourceFormView).vm.$emit('cancel')
     expect(wrapper.emitted('cancel')).toBeTruthy()
   })
-
-  it('passes hideActions through to the inner form view', () => {
-    const wrapper = shallowMount(ResourceEditView, {
-      global: { stubs: { PrinceCard: cardStub } },
-      props: { ...baseProps, hideActions: true },
-    })
-    expect(wrapper.findComponent(ResourceFormView).props('hideActions' as any)).toBe(true)
-  })
 })
 
 describe('ResourceCreateView and ResourceEditView parity', () => {
@@ -143,7 +127,6 @@ describe('ResourceCreateView and ResourceEditView parity', () => {
       'error',
       'itemTitle',
       'validationSchema',
-      'hideActions',
     ] as const
     for (const key of keys) {
       expect(editForm.props(key)).toEqual(createForm.props(key))
