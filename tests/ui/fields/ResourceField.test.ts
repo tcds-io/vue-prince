@@ -91,8 +91,22 @@ describe('ResourceField', () => {
       expect(mountField('EDIT').find('input[type="text"]').exists()).toBe(true)
     })
 
-    it('does not render a RouterLink in editable mode', () => {
-      expect(mountField('EDIT', 1).find('a').exists()).toBe(false)
+    it('renders an active open-link next to the input when value is set', () => {
+      const wrapper = mountField('EDIT', 42)
+      const link = wrapper.find('a.open-link')
+      expect(link.exists()).toBe(true)
+      expect(link.attributes('href')).toBe('/users/42')
+      expect(link.classes()).not.toContain('open-link--disabled')
+      expect(link.attributes('aria-disabled')).toBeUndefined()
+    })
+
+    it('renders a disabled open-link when value is null', () => {
+      const wrapper = mountField('EDIT', null)
+      const link = wrapper.find('a.open-link')
+      expect(link.exists()).toBe(true)
+      expect(link.attributes('href')).toBeUndefined()
+      expect(link.classes()).toContain('open-link--disabled')
+      expect(link.attributes('aria-disabled')).toBe('true')
     })
 
     it('initializes the label via fetchLabel on mount when value is set', async () => {
@@ -107,6 +121,16 @@ describe('ResourceField', () => {
       mountField('EDIT', null, { fetchLabel })
       await flushPromises()
       expect(fetchLabel).not.toHaveBeenCalled()
+    })
+
+    it('calls fetchLabel when value becomes set after mount', async () => {
+      const fetchLabel = vi.fn().mockResolvedValue('Alice')
+      const wrapper = mountField('EDIT', null, { fetchLabel })
+      await flushPromises()
+      expect(fetchLabel).not.toHaveBeenCalled()
+      await wrapper.setProps({ value: 99 } as Record<string, unknown>)
+      await flushPromises()
+      expect(fetchLabel).toHaveBeenCalledWith(99)
     })
   })
 
