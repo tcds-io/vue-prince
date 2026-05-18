@@ -24,6 +24,15 @@
         @input="inputText.length >= MIN_SEARCH_LENGTH ? search({ search: inputText }) : clear()"
         @blur="onBlur"
       />
+      <a
+        :href="value != null ? router.resolve(`${props.refSpec.route}/${value}`).href : undefined"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="open-link"
+        :class="{ 'open-link--disabled': value == null }"
+        :aria-disabled="value == null ? 'true' : undefined"
+        >↗</a
+      >
       <ul v-if="open && options.length > 0">
         <li
           v-for="opt in options"
@@ -39,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { watch } from 'vue'
 import { useRouter } from 'vue-router'
 import type { ResourceFieldProps } from '../../field-props'
 import { useAutocomplete, useFieldEditable } from '../../field-props'
@@ -55,9 +64,13 @@ const MIN_SEARCH_LENGTH = 2
 const { options, inputText, open, search, clear, selectOption, onBlur, initLabel } =
   useAutocomplete(props)
 
-onMounted(async () => {
-  if (value.value != null) await initLabel(value.value)
-})
+watch(
+  value,
+  async (value) => {
+    if (value != null && !inputText.value) await initLabel(value)
+  },
+  { immediate: true },
+)
 </script>
 
 <style>
@@ -109,5 +122,13 @@ onMounted(async () => {
 .vue-resource.field--resource .open-link:hover {
   opacity: 1;
   color: var(--prince-color-primary, #2563eb);
+}
+
+.vue-resource.field--resource .open-link--disabled,
+.vue-resource.field--resource .open-link--disabled:hover {
+  pointer-events: none;
+  opacity: 0.3;
+  color: var(--prince-color-text-muted, #6c757d);
+  cursor: not-allowed;
 }
 </style>
