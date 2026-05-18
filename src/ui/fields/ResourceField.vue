@@ -66,8 +66,8 @@ const { options, inputText, open, search, clear, selectOption, onBlur, initLabel
 
 watch(
   value,
-  async (v) => {
-    if (v != null && !inputText.value) await initLabel(v)
+  async (value) => {
+    if (value != null && !inputText.value) await initLabel(value)
   },
   { immediate: true },
 )
