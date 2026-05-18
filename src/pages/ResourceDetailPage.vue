@@ -101,7 +101,9 @@ const resourceActions = computed(() => {
     }))
 })
 
-const customComponent = computed(() => route.meta.spec?.components?.view)
+const customComponent = computed(
+  () => route.meta.spec?.components?.view ?? getConfig().layout?.pages?.view,
+)
 
 const customProps = computed<ResourceViewPageProps>(() => ({
   item: item.value,

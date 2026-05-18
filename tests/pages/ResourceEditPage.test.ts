@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { defineComponent } from 'vue'
 import { shallowMount, flushPromises } from '@vue/test-utils'
 import ResourceEditPage from '../../src/pages/ResourceEditPage.vue'
-import ResourceFormView from '../../src/ui/ResourceFormView.vue'
+import ResourceEditView from '../../src/ui/ResourceEditView.vue'
 import { configureVuePrince } from '../../src/config'
 
 vi.mock('vue-router', () => ({ useRoute: vi.fn(), useRouter: vi.fn() }))
@@ -91,9 +91,9 @@ describe('ResourceEditPage', () => {
   })
 
   describe('default rendering', () => {
-    it('renders ResourceFormView', () => {
+    it('renders ResourceEditView', () => {
       const wrapper = mountPage()
-      expect(wrapper.findComponent(ResourceFormView).exists()).toBe(true)
+      expect(wrapper.findComponent(ResourceEditView).exists()).toBe(true)
     })
 
     it('does not render custom component', () => {
@@ -101,37 +101,32 @@ describe('ResourceEditPage', () => {
       expect(wrapper.findComponent(CustomEdit).exists()).toBe(false)
     })
 
-    it('passes page=EDIT to ResourceFormView', () => {
-      const wrapper = mountPage()
-      expect(wrapper.findComponent(ResourceFormView).props('page' as any)).toBe('EDIT')
-    })
-
-    it('passes item to ResourceFormView after load', async () => {
+    it('passes item to ResourceEditView after load', async () => {
       store.get.mockResolvedValue({ data: { id: 1, name: 'Acme' }, meta: null })
       const wrapper = mountPage()
       await flushPromises()
-      expect(wrapper.findComponent(ResourceFormView).props('item' as any)).toEqual({
+      expect(wrapper.findComponent(ResourceEditView).props('item' as any)).toEqual({
         id: 1,
         name: 'Acme',
       })
     })
 
-    it('passes loading state to ResourceFormView', () => {
+    it('passes loading state to ResourceEditView', () => {
       store.loading.update = true
       const wrapper = mountPage()
-      expect(wrapper.findComponent(ResourceFormView).props('loading' as any)).toBe(true)
+      expect(wrapper.findComponent(ResourceEditView).props('loading' as any)).toBe(true)
     })
 
-    it('passes error to ResourceFormView', () => {
+    it('passes error to ResourceEditView', () => {
       store.error = 'Server error'
       const wrapper = mountPage()
-      expect(wrapper.findComponent(ResourceFormView).props('error' as any)).toBe('Server error')
+      expect(wrapper.findComponent(ResourceEditView).props('error' as any)).toBe('Server error')
     })
 
     it('submit event calls store.update and navigates to detail', async () => {
       const wrapper = mountPage(BASE_SPEC, '3')
       await flushPromises()
-      await wrapper.findComponent(ResourceFormView).vm.$emit('submit', { name: 'Updated' })
+      await wrapper.findComponent(ResourceEditView).vm.$emit('submit', { name: 'Updated' })
       expect(store.update).toHaveBeenCalledWith('3', { name: 'Updated' })
       await flushPromises()
       expect(mockPush).toHaveBeenCalledWith({ name: 'companies-detail', params: { id: '3' } })
@@ -139,8 +134,38 @@ describe('ResourceEditPage', () => {
 
     it('cancel event navigates to detail', async () => {
       const wrapper = mountPage(BASE_SPEC, '3')
-      await wrapper.findComponent(ResourceFormView).vm.$emit('cancel')
+      await wrapper.findComponent(ResourceEditView).vm.$emit('cancel')
       expect(mockPush).toHaveBeenCalledWith({ name: 'companies-detail', params: { id: '3' } })
+    })
+  })
+
+  describe('layout.pages.edit fallback', () => {
+    const FallbackEdit = defineComponent({ name: 'FallbackEdit', template: '<div />' })
+
+    it('renders fallback component from config when spec has no override', () => {
+      configureVuePrince({ api: { baseUrl: '' }, layout: { pages: { edit: FallbackEdit } } })
+      const wrapper = mountPage()
+      expect(wrapper.findComponent(FallbackEdit).exists()).toBe(true)
+      expect(wrapper.findComponent(ResourceEditView).exists()).toBe(false)
+    })
+
+    it('passes the same props as a per-resource override would', async () => {
+      store.get.mockResolvedValue({ data: { id: 1, name: 'Acme' }, meta: null })
+      configureVuePrince({ api: { baseUrl: '' }, layout: { pages: { edit: FallbackEdit } } })
+      const wrapper = mountPage()
+      await flushPromises()
+      const attrs = wrapper.findComponent(FallbackEdit).vm.$attrs as any
+      expect(attrs.resource).toBe('company')
+      expect(attrs.item).toEqual({ id: 1, name: 'Acme' })
+      expect(typeof attrs.submit).toBe('function')
+      expect(typeof attrs.cancel).toBe('function')
+    })
+
+    it('per-resource spec.components.edit wins over layout.pages.edit', () => {
+      configureVuePrince({ api: { baseUrl: '' }, layout: { pages: { edit: FallbackEdit } } })
+      const wrapper = mountPage({ ...BASE_SPEC, components: { edit: CustomEdit } })
+      expect(wrapper.findComponent(CustomEdit).exists()).toBe(true)
+      expect(wrapper.findComponent(FallbackEdit).exists()).toBe(false)
     })
   })
 
@@ -149,10 +174,10 @@ describe('ResourceEditPage', () => {
       return mountPage({ ...BASE_SPEC, components: { edit: CustomEdit }, ...specOverrides }, id)
     }
 
-    it('renders custom component instead of ResourceFormView', () => {
+    it('renders custom component instead of ResourceEditView', () => {
       const wrapper = mountCustom()
       expect(wrapper.findComponent(CustomEdit).exists()).toBe(true)
-      expect(wrapper.findComponent(ResourceFormView).exists()).toBe(false)
+      expect(wrapper.findComponent(ResourceEditView).exists()).toBe(false)
     })
 
     it('submit calls store.update and navigates to detail', async () => {

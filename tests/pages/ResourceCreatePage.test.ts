@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { defineComponent } from 'vue'
 import { shallowMount, flushPromises } from '@vue/test-utils'
 import ResourceCreatePage from '../../src/pages/ResourceCreatePage.vue'
-import ResourceFormView from '../../src/ui/ResourceFormView.vue'
+import ResourceCreateView from '../../src/ui/ResourceCreateView.vue'
 import { configureVuePrince } from '../../src/config'
 
 vi.mock('vue-router', () => ({ useRoute: vi.fn(), useRouter: vi.fn() }))
@@ -87,9 +87,9 @@ describe('ResourceCreatePage', () => {
   })
 
   describe('default rendering', () => {
-    it('renders ResourceFormView', () => {
+    it('renders ResourceCreateView', () => {
       const wrapper = mountPage()
-      expect(wrapper.findComponent(ResourceFormView).exists()).toBe(true)
+      expect(wrapper.findComponent(ResourceCreateView).exists()).toBe(true)
     })
 
     it('does not render custom component', () => {
@@ -97,32 +97,27 @@ describe('ResourceCreatePage', () => {
       expect(wrapper.findComponent(CustomCreate).exists()).toBe(false)
     })
 
-    it('passes page=CREATE to ResourceFormView', () => {
+    it('passes null item to ResourceCreateView', () => {
       const wrapper = mountPage()
-      expect(wrapper.findComponent(ResourceFormView).props('page' as any)).toBe('CREATE')
+      expect(wrapper.findComponent(ResourceCreateView).props('item' as any)).toBeNull()
     })
 
-    it('passes null item to ResourceFormView', () => {
-      const wrapper = mountPage()
-      expect(wrapper.findComponent(ResourceFormView).props('item' as any)).toBeNull()
-    })
-
-    it('passes loading state to ResourceFormView', () => {
+    it('passes loading state to ResourceCreateView', () => {
       store.loading.create = true
       const wrapper = mountPage()
-      expect(wrapper.findComponent(ResourceFormView).props('loading' as any)).toBe(true)
+      expect(wrapper.findComponent(ResourceCreateView).props('loading' as any)).toBe(true)
     })
 
-    it('passes error to ResourceFormView', () => {
+    it('passes error to ResourceCreateView', () => {
       store.error = 'fail'
       const wrapper = mountPage()
-      expect(wrapper.findComponent(ResourceFormView).props('error' as any)).toBe('fail')
+      expect(wrapper.findComponent(ResourceCreateView).props('error' as any)).toBe('fail')
     })
 
     it('submit event calls store.create and navigates to detail', async () => {
       const wrapper = mountPage()
       await flushPromises()
-      await wrapper.findComponent(ResourceFormView).vm.$emit('submit', { name: 'Acme' })
+      await wrapper.findComponent(ResourceCreateView).vm.$emit('submit', { name: 'Acme' })
       expect(store.create).toHaveBeenCalledWith({ name: 'Acme' })
       await flushPromises()
       expect(mockPush).toHaveBeenCalledWith({ name: 'companies-detail', params: { id: '5' } })
@@ -130,8 +125,37 @@ describe('ResourceCreatePage', () => {
 
     it('cancel event navigates to list', async () => {
       const wrapper = mountPage()
-      await wrapper.findComponent(ResourceFormView).vm.$emit('cancel')
+      await wrapper.findComponent(ResourceCreateView).vm.$emit('cancel')
       expect(mockPush).toHaveBeenCalledWith({ name: 'companies-list' })
+    })
+  })
+
+  describe('layout.pages.create fallback', () => {
+    const FallbackCreate = defineComponent({ name: 'FallbackCreate', template: '<div />' })
+
+    it('renders fallback component from config when spec has no override', () => {
+      configureVuePrince({ api: { baseUrl: '' }, layout: { pages: { create: FallbackCreate } } })
+      const wrapper = mountPage()
+      expect(wrapper.findComponent(FallbackCreate).exists()).toBe(true)
+      expect(wrapper.findComponent(ResourceCreateView).exists()).toBe(false)
+    })
+
+    it('passes the same props as a per-resource override would', () => {
+      store.error = 'oops'
+      configureVuePrince({ api: { baseUrl: '' }, layout: { pages: { create: FallbackCreate } } })
+      const wrapper = mountPage()
+      const attrs = wrapper.findComponent(FallbackCreate).vm.$attrs as any
+      expect(attrs.resource).toBe('company')
+      expect(attrs.error).toBe('oops')
+      expect(typeof attrs.submit).toBe('function')
+      expect(typeof attrs.cancel).toBe('function')
+    })
+
+    it('per-resource spec.components.create wins over layout.pages.create', () => {
+      configureVuePrince({ api: { baseUrl: '' }, layout: { pages: { create: FallbackCreate } } })
+      const wrapper = mountPage({ ...BASE_SPEC, components: { create: CustomCreate } })
+      expect(wrapper.findComponent(CustomCreate).exists()).toBe(true)
+      expect(wrapper.findComponent(FallbackCreate).exists()).toBe(false)
     })
   })
 
@@ -140,10 +164,10 @@ describe('ResourceCreatePage', () => {
       return mountPage({ ...BASE_SPEC, components: { create: CustomCreate } })
     }
 
-    it('renders custom component instead of ResourceFormView', () => {
+    it('renders custom component instead of ResourceCreateView', () => {
       const wrapper = mountCustom()
       expect(wrapper.findComponent(CustomCreate).exists()).toBe(true)
-      expect(wrapper.findComponent(ResourceFormView).exists()).toBe(false)
+      expect(wrapper.findComponent(ResourceCreateView).exists()).toBe(false)
     })
 
     it('submit calls store.create and navigates to detail', async () => {

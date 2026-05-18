@@ -1,6 +1,6 @@
 <template>
   <component :is="customComponent" v-if="customComponent" v-bind="customProps" />
-  <ResourceFormView
+  <ResourceEditView
     v-else
     :item="item"
     :schema="schema"
@@ -11,7 +11,6 @@
     :error="store.error"
     :item-title="itemTitle"
     :validation-schema="route.meta.spec?.validationSchema"
-    page="EDIT"
     @submit="submit"
     @cancel="cancel"
   />
@@ -23,7 +22,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { createResourceController } from '../resource-controller'
 import type { ResourceMetadata, ResourceSchemaField } from '../api'
 import type { ResourceEditPageProps } from '../page-props'
-import ResourceFormView from '../ui/ResourceFormView.vue'
+import { getConfig } from '../config'
+import ResourceEditView from '../ui/ResourceEditView.vue'
 import { useResourceSchema, useResourceLabels } from './use-resource-meta'
 
 const route = useRoute()
@@ -67,7 +67,9 @@ onMounted(async () => {
   }
 })
 
-const customComponent = computed(() => route.meta.spec?.components?.edit)
+const customComponent = computed(
+  () => route.meta.spec?.components?.edit ?? getConfig().layout?.pages?.edit,
+)
 
 const customProps = computed<ResourceEditPageProps>(() => ({
   item: item.value,

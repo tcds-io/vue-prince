@@ -28,11 +28,20 @@ export interface LayoutDropdownProps {
   actions: Array<{ label: string; onClick: () => void }>
 }
 
+export type LayoutPageComponentMap = {
+  list?: Component
+  view?: Component
+  create?: Component
+  edit?: Component
+  delete?: Component
+}
+
 export type LayoutComponentMap = {
   card?: Component
   table?: Component
   tabs?: Component
   dropdown?: Component
+  pages?: LayoutPageComponentMap
 }
 
 export type VuePrinceConfig = {

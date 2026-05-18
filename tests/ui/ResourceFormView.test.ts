@@ -171,6 +171,56 @@ describe('ResourceFormView', () => {
     })
   })
 
+  describe('hideActions', () => {
+    // Use a stub that distinguishes whether the #footer slot was provided.
+    const cardStubFooterAware = {
+      name: 'PrinceCard',
+      props: ['title'],
+      template:
+        '<div><slot name="header"/><slot/><div v-if="$slots.footer" data-testid="footer"><slot name="footer"/></div></div>',
+    }
+
+    function mountWithCard(overrides: Record<string, unknown> = {}, slots: any = undefined) {
+      return shallowMount(ResourceFormView, {
+        global: { stubs: { PrinceCard: cardStubFooterAware } },
+        props: {
+          item: null,
+          schema,
+          labels: {},
+          loading: false,
+          error: null,
+          page: 'CREATE' as const,
+          resource: 'company',
+          ...overrides,
+        },
+        slots,
+      })
+    }
+
+    it('renders the footer with Cancel/Submit by default', () => {
+      const wrapper = mountWithCard()
+      expect(wrapper.find('[data-testid="footer"]').exists()).toBe(true)
+      const buttons = wrapper.findAllComponents({ name: 'PrinceButton' })
+      const types = buttons.map((b) => b.props('type'))
+      expect(types).toContain('Cancel')
+      expect(types).toContain('Submit')
+    })
+
+    it('omits the footer entirely when hideActions is true', () => {
+      const wrapper = mountWithCard({ hideActions: true })
+      expect(wrapper.find('[data-testid="footer"]').exists()).toBe(false)
+    })
+
+    it('omits the footer even when an actions slot is provided', () => {
+      const wrapper = mountWithCard(
+        { hideActions: true },
+        { actions: '<button class="external-submit">Save</button>' },
+      )
+      expect(wrapper.find('[data-testid="footer"]').exists()).toBe(false)
+      expect(wrapper.find('.external-submit').exists()).toBe(false)
+    })
+  })
+
   describe('header title', () => {
     it('shows "Create {resource}" in CREATE mode', () => {
       const wrapper = mountForm()
