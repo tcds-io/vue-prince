@@ -149,6 +149,35 @@ describe('ResourceListPage', () => {
     })
   })
 
+  describe('layout.pages.list fallback', () => {
+    const FallbackList = defineComponent({ name: 'FallbackList', template: '<div />' })
+
+    it('renders fallback component from config when spec has no override', () => {
+      configureVuePrince({ api: { baseUrl: '' }, layout: { pages: { list: FallbackList } } })
+      const wrapper = mountPage()
+      expect(wrapper.findComponent(FallbackList).exists()).toBe(true)
+      expect(wrapper.findComponent(ResourceListView).exists()).toBe(false)
+    })
+
+    it('passes the same props as a per-resource override would', () => {
+      store.error = 'failed'
+      configureVuePrince({ api: { baseUrl: '' }, layout: { pages: { list: FallbackList } } })
+      const wrapper = mountPage()
+      const attrs = wrapper.findComponent(FallbackList).vm.$attrs as any
+      expect(attrs.resource).toBe('company')
+      expect(attrs.error).toBe('failed')
+      expect(typeof attrs.navigateToItem).toBe('function')
+      expect(typeof attrs.createNew).toBe('function')
+    })
+
+    it('per-resource spec.components.list wins over layout.pages.list', () => {
+      configureVuePrince({ api: { baseUrl: '' }, layout: { pages: { list: FallbackList } } })
+      const wrapper = mountPage({ ...BASE_SPEC, components: { list: CustomList } })
+      expect(wrapper.findComponent(CustomList).exists()).toBe(true)
+      expect(wrapper.findComponent(FallbackList).exists()).toBe(false)
+    })
+  })
+
   describe('custom list component', () => {
     function mountCustom(query: Record<string, string> = {}) {
       return mountPage({ ...BASE_SPEC, components: { list: CustomList } }, query)

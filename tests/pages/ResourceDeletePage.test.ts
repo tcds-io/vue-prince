@@ -103,6 +103,36 @@ describe('ResourceDeletePage', () => {
     })
   })
 
+  describe('layout.pages.delete fallback', () => {
+    const FallbackDelete = defineComponent({ name: 'FallbackDelete', template: '<div />' })
+
+    it('renders fallback component from config when spec has no override', () => {
+      configureVuePrince({ api: { baseUrl: '' }, layout: { pages: { delete: FallbackDelete } } })
+      const wrapper = mountPage()
+      expect(wrapper.findComponent(FallbackDelete).exists()).toBe(true)
+      expect(wrapper.findComponent(PrinceCard).exists()).toBe(false)
+    })
+
+    it('passes the same props as a per-resource override would', async () => {
+      store.get.mockResolvedValue({ data: { id: 1, name: 'Acme Corp' }, meta: null })
+      configureVuePrince({ api: { baseUrl: '' }, layout: { pages: { delete: FallbackDelete } } })
+      const wrapper = mountPage()
+      await flushPromises()
+      const attrs = wrapper.findComponent(FallbackDelete).vm.$attrs as any
+      expect(attrs.resource).toBe('company')
+      expect(attrs.itemTitle).toBe('Acme Corp')
+      expect(typeof attrs.cancel).toBe('function')
+      expect(typeof attrs.confirm).toBe('function')
+    })
+
+    it('per-resource spec.components.delete wins over layout.pages.delete', () => {
+      configureVuePrince({ api: { baseUrl: '' }, layout: { pages: { delete: FallbackDelete } } })
+      const wrapper = mountPage({ ...BASE_SPEC, components: { delete: CustomDelete } })
+      expect(wrapper.findComponent(CustomDelete).exists()).toBe(true)
+      expect(wrapper.findComponent(FallbackDelete).exists()).toBe(false)
+    })
+  })
+
   describe('custom delete component', () => {
     function mountCustom(specOverrides: any = {}, id = '1') {
       return mountPage({ ...BASE_SPEC, components: { delete: CustomDelete }, ...specOverrides }, id)

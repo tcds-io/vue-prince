@@ -129,6 +129,37 @@ describe('ResourceDetailPage', () => {
     })
   })
 
+  describe('layout.pages.view fallback', () => {
+    const FallbackView = defineComponent({ name: 'FallbackView', template: '<div />' })
+
+    it('renders fallback component from config when spec has no override', () => {
+      configureVuePrince({ api: { baseUrl: '' }, layout: { pages: { view: FallbackView } } })
+      const wrapper = mountPage()
+      expect(wrapper.findComponent(FallbackView).exists()).toBe(true)
+      expect(wrapper.findComponent(ResourceDetailView).exists()).toBe(false)
+    })
+
+    it('passes the same props as a per-resource override would', async () => {
+      store.get.mockResolvedValue({ data: { id: 1, name: 'Acme' }, meta: null })
+      configureVuePrince({ api: { baseUrl: '' }, layout: { pages: { view: FallbackView } } })
+      const wrapper = mountPage()
+      await flushPromises()
+      const attrs = wrapper.findComponent(FallbackView).vm.$attrs as any
+      expect(attrs.resource).toBe('company')
+      expect(attrs.item).toEqual({ id: 1, name: 'Acme' })
+      expect(typeof attrs.back).toBe('function')
+      expect(typeof attrs.edit).toBe('function')
+      expect(typeof attrs.confirmDelete).toBe('function')
+    })
+
+    it('per-resource spec.components.view wins over layout.pages.view', () => {
+      configureVuePrince({ api: { baseUrl: '' }, layout: { pages: { view: FallbackView } } })
+      const wrapper = mountPage({ ...BASE_SPEC, components: { view: CustomView } })
+      expect(wrapper.findComponent(CustomView).exists()).toBe(true)
+      expect(wrapper.findComponent(FallbackView).exists()).toBe(false)
+    })
+  })
+
   describe('custom view component', () => {
     function mountCustom(specOverrides: any = {}, id = '1') {
       return mountPage({ ...BASE_SPEC, components: { view: CustomView }, ...specOverrides }, id)

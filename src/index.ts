@@ -4,6 +4,7 @@ export type {
   FieldComponentEntry,
   ButtonComponentMap,
   LayoutComponentMap,
+  LayoutPageComponentMap,
   LayoutCardProps,
   LayoutTableProps,
   LayoutTabsProps,
@@ -39,7 +40,8 @@ export { default as ResourceTabView } from './pages/ResourceTabView.vue'
 
 export { default as ResourceListView } from './ui/ResourceListView.vue'
 export { default as ResourceDetailView } from './ui/ResourceDetailView.vue'
-export { default as ResourceFormView } from './ui/ResourceFormView.vue'
+export { default as ResourceCreateView } from './ui/ResourceCreateView.vue'
+export { default as ResourceEditView } from './ui/ResourceEditView.vue'
 export { default as PrinceButton } from './ui/PrinceButton.vue'
 export { default as PrinceCard } from './ui/PrinceCard.vue'
 export { default as PrinceTabs } from './ui/PrinceTabs.vue'

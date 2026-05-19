@@ -26,6 +26,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { ResourceDeletePageProps } from '../page-props'
 import { createResourceController } from '../resource-controller'
+import { getConfig } from '../config'
 import PrinceButton from '../ui/PrinceButton.vue'
 import PrinceCard from '../ui/PrinceCard.vue'
 
@@ -59,7 +60,9 @@ async function confirm() {
   if (!store.error) router.push({ name: `${segment.value}-list` })
 }
 
-const customComponent = computed(() => route.meta.spec?.components?.delete)
+const customComponent = computed(
+  () => route.meta.spec?.components?.delete ?? getConfig().layout?.pages?.delete,
+)
 
 const customProps = computed<ResourceDeletePageProps>(() => ({
   item: item.value,

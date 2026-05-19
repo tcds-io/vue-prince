@@ -181,7 +181,9 @@ const listActions = computed(() =>
   (route.meta.spec?.actions?.list ?? []).filter((a) => hasActionPermission(a.permission)),
 )
 
-const customComponent = computed(() => route.meta.spec?.components?.list)
+const customComponent = computed(
+  () => route.meta.spec?.components?.list ?? getConfig().layout?.pages?.list,
+)
 const searchComponent = computed(() => route.meta.spec?.components?.search)
 
 const items = computed(() => store.items as ResourceListItem<Record<string, unknown>>[])

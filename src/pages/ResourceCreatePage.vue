@@ -1,6 +1,6 @@
 <template>
   <component :is="customComponent" v-if="customComponent" v-bind="customProps" />
-  <ResourceFormView
+  <ResourceCreateView
     v-else
     :item="initialItem"
     :schema="schema"
@@ -10,7 +10,6 @@
     :loading="store.loading.create"
     :error="store.error"
     :validation-schema="route.meta.spec?.validationSchema"
-    page="CREATE"
     @submit="submit"
     @cancel="cancel"
   />
@@ -23,7 +22,8 @@ import { createResourceController } from '../resource-controller'
 import type { ResourceSchemaField } from '../api'
 import type { ResourceCreatePageProps } from '../page-props'
 import { resolveFieldType } from '../resource'
-import ResourceFormView from '../ui/ResourceFormView.vue'
+import { getConfig } from '../config'
+import ResourceCreateView from '../ui/ResourceCreateView.vue'
 import { useResourceSchema, useResourceLabels } from './use-resource-meta'
 
 const route = useRoute()
@@ -66,7 +66,9 @@ function cancel() {
   router.push({ name: `${segment.value}-list` })
 }
 
-const customComponent = computed(() => route.meta.spec?.components?.create)
+const customComponent = computed(
+  () => route.meta.spec?.components?.create ?? getConfig().layout?.pages?.create,
+)
 
 const customProps = computed<ResourceCreatePageProps>(() => ({
   schema: schema.value,
