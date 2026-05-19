@@ -24,6 +24,8 @@ export {
   slugify,
   toFieldLabel,
   buildResourceFieldProps,
+  normalizeFieldType,
+  resolveFieldComponent,
   type FieldContext,
   NumberField,
   TextField,
