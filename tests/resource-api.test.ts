@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { configureVuePrince } from '../src'
-import { createResourceApi } from '../src'
+import { createResourceApi, ResourceApiError } from '../src'
 
 const BASE_URL = '/api/companies'
 
@@ -160,32 +160,81 @@ describe('createResourceApi', () => {
   })
 
   describe('error responses', () => {
-    it('throws on non-2xx status for create()', async () => {
+    it('surfaces the backend message on non-2xx with a JSON body', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         status: 422,
         ok: false,
         json: () => Promise.resolve({ message: 'Validation failed' }),
       })
-      await expect(makeApi().create({ name: 'Acme' } as any)).rejects.toThrow('HTTP 422')
+      await expect(makeApi().create({ name: 'Acme' } as any)).rejects.toThrow('Validation failed')
     })
 
-    it('throws on non-2xx status for list()', async () => {
-      global.fetch = vi.fn().mockResolvedValue({ status: 500, ok: false, json: vi.fn() })
+    it('attaches status and body to the thrown ResourceApiError', async () => {
+      const body = { message: 'Validation failed', code: 'E_VALIDATION', errors: { name: ['required'] } }
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 422,
+        ok: false,
+        json: () => Promise.resolve(body),
+      })
+      try {
+        await makeApi().create({} as any)
+        throw new Error('expected to throw')
+      } catch (err) {
+        expect(err).toBeInstanceOf(ResourceApiError)
+        const e = err as ResourceApiError
+        expect(e.message).toBe('Validation failed')
+        expect(e.status).toBe(422)
+        expect(e.body).toEqual(body)
+      }
+    })
+
+    it('falls back to HTTP {status} when the JSON body has no message', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 500,
+        ok: false,
+        json: () => Promise.resolve({ trace: 'oops' }),
+      })
       await expect(makeApi().list()).rejects.toThrow('HTTP 500')
     })
 
-    it('throws on non-2xx status for get()', async () => {
-      global.fetch = vi.fn().mockResolvedValue({ status: 404, ok: false, json: vi.fn() })
-      await expect(makeApi().get(1)).rejects.toThrow('HTTP 404')
+    it('falls back to HTTP {status} when the body is empty / non-JSON', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 502,
+        ok: false,
+        json: () => Promise.reject(new Error('Unexpected end of JSON input')),
+      })
+      try {
+        await makeApi().get(1)
+        throw new Error('expected to throw')
+      } catch (err) {
+        expect(err).toBeInstanceOf(ResourceApiError)
+        const e = err as ResourceApiError
+        expect(e.message).toBe('HTTP 502')
+        expect(e.status).toBe(502)
+        expect(e.body).toBeNull()
+      }
     })
 
-    it('throws on non-2xx status for update()', async () => {
-      global.fetch = vi.fn().mockResolvedValue({ status: 400, ok: false, json: vi.fn() })
-      await expect(makeApi().update(1, {} as any)).rejects.toThrow('HTTP 400')
+    it('2xx responses pass through without throwing', async () => {
+      global.fetch = mockFetch({ data: { id: 1 }, meta: {} }, 200)
+      await expect(makeApi().get(1)).resolves.toEqual({ data: { id: 1 }, meta: {} })
     })
 
-    it('throws on non-2xx status for remove()', async () => {
-      global.fetch = vi.fn().mockResolvedValue({ status: 403, ok: false })
+    it('throws on non-2xx for update()', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 400,
+        ok: false,
+        json: () => Promise.resolve({ message: 'Bad request' }),
+      })
+      await expect(makeApi().update(1, {} as any)).rejects.toThrow('Bad request')
+    })
+
+    it('throws on non-2xx for remove()', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        status: 403,
+        ok: false,
+        json: () => Promise.reject(new Error('no body')),
+      })
       await expect(makeApi().remove(1)).rejects.toThrow('HTTP 403')
     })
   })

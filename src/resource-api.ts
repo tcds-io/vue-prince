@@ -8,6 +8,35 @@ import type {
 } from './api'
 import { getConfig } from './config'
 
+export class ResourceApiError extends Error {
+  readonly status: number
+  readonly body: unknown
+
+  constructor(message: string, status: number, body: unknown) {
+    super(message)
+    this.name = 'ResourceApiError'
+    this.status = status
+    this.body = body
+  }
+}
+
+async function assertOk(response: Response): Promise<void> {
+  if (response.ok) return
+  let body: unknown = null
+  try {
+    body = await response.json()
+  } catch {
+    // non-JSON or empty body — fall through to default message
+  }
+  const bodyMessage =
+    typeof body === 'object' &&
+    body !== null &&
+    typeof (body as { message?: unknown }).message === 'string'
+      ? (body as { message: string }).message
+      : null
+  throw new ResourceApiError(bodyMessage || `HTTP ${response.status}`, response.status, body)
+}
+
 export function createResourceApi(options: {
   path: string
   baseUrl?: string
@@ -15,9 +44,6 @@ export function createResourceApi(options: {
 }): ResourceApi {
   const defaultHeaders = { 'Content-Type': 'application/json', Accept: 'application/json' }
 
-  function assertOk(response: Response) {
-    if (!response.ok) throw new Error(`HTTP ${response.status}`)
-  }
   // Evaluated on every request so reactive refs and getter functions always return fresh values.
   const getHeaders = () => ({
     ...defaultHeaders,
@@ -30,7 +56,7 @@ export function createResourceApi(options: {
       const response = await fetch(`${getBase()}${options.path}/_schema`, {
         headers: getHeaders(),
       })
-      assertOk(response)
+      await assertOk(response)
       const body = (await response.json()) as {
         schema: ResourceSchemaField[]
         permissions?: Record<string, string>
@@ -49,7 +75,7 @@ export function createResourceApi(options: {
       }
 
       const response = await fetch(url, { headers: getHeaders() })
-      assertOk(response)
+      await assertOk(response)
       return (await response.json()) as Promise<ResourceListResponse<Record<string, unknown>>>
     },
 
@@ -57,7 +83,7 @@ export function createResourceApi(options: {
       const response = await fetch(`${getBase()}${options.path}/${id}`, {
         headers: getHeaders(),
       })
-      assertOk(response)
+      await assertOk(response)
       return (await response.json()) as Promise<ResourceResponse<Record<string, unknown>>>
     },
 
@@ -68,7 +94,7 @@ export function createResourceApi(options: {
         body: JSON.stringify(data),
       })
 
-      assertOk(response)
+      await assertOk(response)
       const body = await response.json()
       // Support both enveloped { data, meta } and bare { id, ... } responses
       return ('data' in body ? body : { data: body }) as ResourceResponse<Record<string, unknown>>
@@ -81,7 +107,7 @@ export function createResourceApi(options: {
         body: JSON.stringify(data),
       })
 
-      assertOk(response)
+      await assertOk(response)
       if (response.status === 204) return null
       return (await response.json()) as Promise<ResourceResponse<Record<string, unknown>>>
     },
@@ -91,7 +117,7 @@ export function createResourceApi(options: {
         method: 'DELETE',
         headers: getHeaders(),
       })
-      assertOk(response)
+      await assertOk(response)
     },
 
     async createMany(data) {
@@ -100,7 +126,7 @@ export function createResourceApi(options: {
         headers: getHeaders(),
         body: JSON.stringify({ data }),
       })
-      assertOk(response)
+      await assertOk(response)
       const body = await response.json()
       // Support { data: [...] } envelope or bare array
       return (Array.isArray(body) ? body : body.data) as ResourceResponse<Record<string, unknown>>[]
@@ -112,7 +138,7 @@ export function createResourceApi(options: {
         headers: getHeaders(),
         body: JSON.stringify({ data }),
       })
-      assertOk(response)
+      await assertOk(response)
     },
 
     async removeMany(ids) {
@@ -121,7 +147,7 @@ export function createResourceApi(options: {
         headers: getHeaders(),
         body: JSON.stringify({ data: ids }),
       })
-      assertOk(response)
+      await assertOk(response)
     },
   }
 }

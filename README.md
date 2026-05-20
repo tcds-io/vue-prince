@@ -271,6 +271,26 @@ type ResourceApi<Model> = {
 | PATCH  | `{path}`         | `updateMany` |
 | DELETE | `{path}`         | `deleteMany` |
 
+### Error handling
+
+On non-2xx responses every method throws a `ResourceApiError` carrying the parsed response body so consumers can surface backend messages:
+
+```ts
+import { ResourceApiError } from '@tcds-io/vue-prince'
+
+try {
+  await api.create({ name: '' })
+} catch (err) {
+  if (err instanceof ResourceApiError) {
+    err.message // backend's `message` field, or `HTTP {status}` if absent
+    err.status  // numeric HTTP status
+    err.body    // parsed JSON body (or null on empty / non-JSON) — read backend-specific fields off this
+  }
+}
+```
+
+`error.message` remains readable from any `catch (e) { e.message }` — it returns the backend message when present and falls back to `HTTP {status}` otherwise.
+
 ---
 
 ## Routes
