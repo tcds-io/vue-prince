@@ -10,6 +10,7 @@ export type SpecFieldType =
   | 'boolean'
   | 'datetime'
   | 'enum'
+  | 'phone'
 
 type SpecFieldTypeToTs = {
   integer: number
@@ -19,6 +20,7 @@ type SpecFieldTypeToTs = {
   boolean: boolean
   datetime: string
   enum: string
+  phone: string
 }
 
 // Maps a field's `type` to its TypeScript value type.

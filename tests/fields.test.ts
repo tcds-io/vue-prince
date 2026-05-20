@@ -17,7 +17,7 @@ import {
 } from '../src/ui/fields'
 
 describe('normalizeFieldType', () => {
-  it.each(['integer', 'number', 'string', 'text', 'boolean', 'datetime', 'enum'] as const)(
+  it.each(['integer', 'number', 'string', 'text', 'boolean', 'datetime', 'enum', 'phone'] as const)(
     'passes through known type: %s',
     (type) => expect(normalizeFieldType(type)).toBe(type),
   )
@@ -180,6 +180,12 @@ describe('resolveFieldComponent', () => {
     configureVuePrince({ api: { baseUrl: '' }, fields: { resource: MyResourceField as any } })
     const refSpec = { name: 'user', route: '/users', api: () => ({}) as any }
     expect(resolveFieldComponent(() => refSpec)).toBe(MyResourceField)
+  })
+
+  it('uses a custom phone component registered via fields.phone', () => {
+    const MyPhoneField = {}
+    configureVuePrince({ api: { baseUrl: '' }, fields: { phone: MyPhoneField as any } })
+    expect(resolveFieldComponent('phone')).toBe(MyPhoneField)
   })
 })
 
