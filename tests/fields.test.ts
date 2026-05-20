@@ -17,17 +17,9 @@ import {
 } from '../src/ui/fields'
 
 describe('normalizeFieldType', () => {
-  it.each([
-    'integer',
-    'number',
-    'string',
-    'text',
-    'boolean',
-    'datetime',
-    'enum',
-    'phone',
-  ] as const)('passes through known type: %s', (type) =>
-    expect(normalizeFieldType(type)).toBe(type),
+  it.each(['integer', 'number', 'string', 'text', 'boolean', 'datetime', 'enum', 'phone'] as const)(
+    'passes through known type: %s',
+    (type) => expect(normalizeFieldType(type)).toBe(type),
   )
 
   it('falls back to string for unknown types', () => {
