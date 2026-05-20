@@ -283,8 +283,8 @@ try {
 } catch (err) {
   if (err instanceof ResourceApiError) {
     err.message // backend's `message` field, or `HTTP {status}` if absent
-    err.status  // numeric HTTP status
-    err.body    // parsed JSON body (or null on empty / non-JSON) — read backend-specific fields off this
+    err.status // numeric HTTP status
+    err.body // parsed JSON body (or null on empty / non-JSON) — read backend-specific fields off this
   }
 }
 ```

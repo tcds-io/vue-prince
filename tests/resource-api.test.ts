@@ -170,7 +170,11 @@ describe('createResourceApi', () => {
     })
 
     it('attaches status and body to the thrown ResourceApiError', async () => {
-      const body = { message: 'Validation failed', code: 'E_VALIDATION', errors: { name: ['required'] } }
+      const body = {
+        message: 'Validation failed',
+        code: 'E_VALIDATION',
+        errors: { name: ['required'] },
+      }
       global.fetch = vi.fn().mockResolvedValue({
         status: 422,
         ok: false,
