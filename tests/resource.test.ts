@@ -133,6 +133,19 @@ describe('defineResource', () => {
     })
   })
 
+  it('compiles with a phone field type and infers it as string', () => {
+    defineResource({
+      name: 'user',
+      route: '/users',
+      api: mockApi,
+      fields: {
+        phone: { type: 'phone' as const },
+      },
+      // .toUpperCase only exists on string — proves phone infers as string
+      title: (item) => item.phone.toUpperCase(),
+    })
+  })
+
   it('accepts resource-ref fields', () => {
     const userSpec: ResourceSpec = { name: 'user', route: '/users', api: mockApi }
     const result = defineResource({
@@ -160,6 +173,7 @@ describe('InferResourceModel', () => {
       active: { type: 'boolean' as const },
       joined_at: { type: 'datetime' as const },
       role: { type: 'enum' as const },
+      phone: { type: 'phone' as const },
     },
   })
 
@@ -196,6 +210,11 @@ describe('InferResourceModel', () => {
   it('infers enum fields as string', () => {
     type M = InferResourceModel<typeof _userSpec>
     expectTypeOf<M['role']>().toEqualTypeOf<string>()
+  })
+
+  it('infers phone fields as string', () => {
+    type M = InferResourceModel<typeof _userSpec>
+    expectTypeOf<M['phone']>().toEqualTypeOf<string>()
   })
 
   it('infers resource-ref fields as number', () => {
