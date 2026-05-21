@@ -2,6 +2,14 @@
   "name": "@tcds-io/vue-prince",
   "version": "0.1.0",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tcds-io/vue-prince.git"
+  },
+  "homepage": "https://github.com/tcds-io/vue-prince#readme",
+  "bugs": {
+    "url": "https://github.com/tcds-io/vue-prince/issues"
+  },
   "main": "./dist/vue-prince.umd.js",
   "module": "./dist/vue-prince.es.js",
   "types": "./dist/types/index.d.ts",
