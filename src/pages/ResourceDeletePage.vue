@@ -69,6 +69,7 @@ const customProps = computed<ResourceDeletePageProps>(() => ({
   resource: route.meta.spec?.name,
   loading: store.loading.remove,
   error: store.error,
+  lastError: store.lastError,
   itemTitle: itemTitle.value,
   cancel,
   confirm,

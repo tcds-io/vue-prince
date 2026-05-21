@@ -10,6 +10,7 @@ export interface ResourceListPageProps<T = Record<string, unknown>> {
   resource: string | undefined
   loading: boolean
   error: string | null
+  lastError: Error | null
   itemsMeta: ResourceListMetadata | null
   page: number
   search: Record<string, string>
@@ -27,6 +28,7 @@ export interface ResourceViewPageProps {
   resource: string | undefined
   loading: boolean
   error: string | null
+  lastError: Error | null
   itemTitle: string | undefined
   back: () => void
   edit: () => void
@@ -41,6 +43,7 @@ export interface ResourceDeletePageProps {
   resource: string | undefined
   loading: boolean
   error: string | null
+  lastError: Error | null
   itemTitle: string | undefined
   cancel: () => void
   confirm: () => Promise<void>
@@ -52,6 +55,7 @@ export interface ResourceCreatePageProps {
   resource: string | undefined
   loading: boolean
   error: string | null
+  lastError: Error | null
   submit: (data: Record<string, unknown>) => Promise<void>
   cancel: () => void
 }
@@ -68,6 +72,7 @@ export interface ResourceEditPageProps {
   resource: string | undefined
   loading: boolean
   error: string | null
+  lastError: Error | null
   itemTitle: string | undefined
   submit: (data: Record<string, unknown>) => Promise<void>
   cancel: () => void

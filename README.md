@@ -325,7 +325,8 @@ store.schemaFields   // fields from /_schema
 store.schemaPermissions
 store.schemaLoaded
 store.loading
-store.error
+store.error          // String(error) — stable, simple to display
+store.lastError      // raw Error | null — narrow with `instanceof ResourceApiError` to read .status / .body
 
 // actions
 store.fetchSchema(): Promise<void>
@@ -339,7 +340,24 @@ store.updateMany(data[]): Promise<void>
 store.deleteMany(ids[]): Promise<void>
 ```
 
-All actions set `loading = true` while in-flight and populate `error` on failure.
+All actions set `loading = true` while in-flight and populate `error` (string form) and `lastError` (raw `Error` instance) on failure. Both are reset to `null` at the start of every action and on success.
+
+Reach for `lastError` when you need to inspect the underlying failure — for example, mapping a backend error code to a friendly message in a custom page:
+
+```ts
+import { ResourceApiError } from '@tcds-io/vue-prince'
+
+watch(
+  () => store.lastError,
+  (err) => {
+    if (err instanceof ResourceApiError && err.status === 422) {
+      // err.body is the parsed JSON response — surface field-level errors, etc.
+    }
+  },
+)
+```
+
+Prefer `lastError` when you need `.status` / `.body`; `error` (string) remains for simple display.
 
 > `get()` returns the record directly rather than storing it in shared state. This prevents stale data from a previous navigation from appearing briefly on the new detail page.
 
@@ -460,7 +478,8 @@ const props = defineProps<ResourceListPageProps>()
 // props.labels        — label overrides from spec.fields
 // props.resource      — resource name string
 // props.loading       — true while fetching
-// props.error         — error message or null
+// props.error         — error message or null (String(error))
+// props.lastError     — raw Error | null (narrow with `instanceof ResourceApiError`)
 // props.listMeta      — pagination info (total, last_page, per_page, …)
 // props.page          — current page number
 // props.navigateToItem(item)
@@ -477,7 +496,7 @@ const props = defineProps<ResourceListPageProps>()
 | `edit`   | `ResourceEditPageProps`   | `item`, `itemTitle`, `submit(data)`, `cancel`                          |
 | `delete` | `ResourceDeletePageProps` | `item`, `itemTitle`, `confirm`, `cancel`                               |
 
-All interfaces also include `schema`, `labels`, `resource`, `loading`, and `error`.
+All interfaces also include `schema`, `labels`, `resource`, `loading`, `error`, and `lastError`.
 
 ### Full example — custom list page
 

@@ -53,6 +53,17 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
       removeMany: false,
     })
     const error = ref<string | null>(null)
+    const lastError = ref<Error | null>(null)
+
+    function resetError() {
+      error.value = null
+      lastError.value = null
+    }
+
+    function captureError(e: unknown) {
+      error.value = String(e)
+      lastError.value = e instanceof Error ? e : null
+    }
 
     // Dedup: if a schema fetch is already in flight, reuse the same promise.
     let schemaFetchPromise: Promise<void> | null = null
@@ -62,7 +73,7 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
       if (schemaFetchPromise) return schemaFetchPromise
       schemaFetchPromise = (async () => {
         loading.schema = true
-        error.value = null
+        resetError()
         try {
           const result = await api.schema()
           schemaFields.value = result.fields
@@ -70,7 +81,7 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
           if (!spec.permissions) schemaPermissions.value = result.permissions as ResourcePermissions
           schemaLoaded.value = true
         } catch (e) {
-          error.value = String(e)
+          captureError(e)
         } finally {
           loading.schema = false
           schemaFetchPromise = null
@@ -82,7 +93,7 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
     async function list(params?: Record<string, string | number | boolean>) {
       loading.list = true
       await fetchSchema()
-      error.value = null
+      resetError()
       try {
         if (!hasPermission(schemaPermissions.value, 'read'))
           throw new Error('Permission denied: read')
@@ -90,7 +101,7 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
         items.value = res.data
         itemsMeta.value = res.meta
       } catch (e) {
-        error.value = String(e)
+        captureError(e)
         items.value = []
         itemsMeta.value = null
       } finally {
@@ -101,14 +112,14 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
     async function get(id: ResourceId): Promise<{ data: Model; meta: ResourceMetadata } | null> {
       loading.get = true
       await fetchSchema()
-      error.value = null
+      resetError()
       try {
         if (!hasPermission(schemaPermissions.value, 'read'))
           throw new Error('Permission denied: read')
         const res = await api.get(id)
         return { data: res.data, meta: res.meta }
       } catch (e) {
-        error.value = String(e)
+        captureError(e)
         return null
       } finally {
         loading.get = false
@@ -118,14 +129,14 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
     async function create(data: Partial<Model>): Promise<Model | null> {
       loading.create = true
       await fetchSchema()
-      error.value = null
+      resetError()
       try {
         if (!hasPermission(schemaPermissions.value, 'create'))
           throw new Error('Permission denied: create')
         const res = await api.create(data)
         return res.data
       } catch (e) {
-        error.value = String(e)
+        captureError(e)
         return null
       } finally {
         loading.create = false
@@ -135,14 +146,14 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
     async function update(id: ResourceId, data: Partial<Model>): Promise<boolean> {
       loading.update = true
       await fetchSchema()
-      error.value = null
+      resetError()
       try {
         if (!hasPermission(schemaPermissions.value, 'update'))
           throw new Error('Permission denied: update')
         await api.update(id, data)
         return true
       } catch (e) {
-        error.value = String(e)
+        captureError(e)
         return false
       } finally {
         loading.update = false
@@ -152,14 +163,14 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
     async function remove(id: ResourceId) {
       loading.remove = true
       await fetchSchema()
-      error.value = null
+      resetError()
       try {
         if (!hasPermission(schemaPermissions.value, 'delete'))
           throw new Error('Permission denied: delete')
         await api.remove(id)
         items.value = items.value.filter((r) => !('id' in r) || r.id !== id)
       } catch (e) {
-        error.value = String(e)
+        captureError(e)
       } finally {
         loading.remove = false
       }
@@ -168,14 +179,14 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
     async function createMany(data: Partial<Model>[]) {
       loading.createMany = true
       await fetchSchema()
-      error.value = null
+      resetError()
       try {
         if (!hasPermission(schemaPermissions.value, 'create'))
           throw new Error('Permission denied: create')
         const results = await api.createMany(data)
         return results.map((r) => r.data)
       } catch (e) {
-        error.value = String(e)
+        captureError(e)
       } finally {
         loading.createMany = false
       }
@@ -184,13 +195,13 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
     async function updateMany(data: (Partial<Model> & { id: ResourceId })[]) {
       loading.updateMany = true
       await fetchSchema()
-      error.value = null
+      resetError()
       try {
         if (!hasPermission(schemaPermissions.value, 'update'))
           throw new Error('Permission denied: update')
         await api.updateMany(data)
       } catch (e) {
-        error.value = String(e)
+        captureError(e)
       } finally {
         loading.updateMany = false
       }
@@ -199,14 +210,14 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
     async function removeMany(ids: ResourceId[]) {
       loading.removeMany = true
       await fetchSchema()
-      error.value = null
+      resetError()
       try {
         if (!hasPermission(schemaPermissions.value, 'delete'))
           throw new Error('Permission denied: delete')
         await api.removeMany(ids)
         items.value = items.value.filter((r) => !('id' in r) || !ids.includes(r.id as ResourceId))
       } catch (e) {
-        error.value = String(e)
+        captureError(e)
       } finally {
         loading.removeMany = false
       }
@@ -227,6 +238,7 @@ export function createResourceController<const S extends ResourceSpec>(spec: S) 
       schemaLoaded,
       loading,
       error,
+      lastError,
       fetchSchema,
       list,
       get,

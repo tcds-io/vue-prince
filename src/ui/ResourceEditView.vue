@@ -7,6 +7,7 @@
     :resource="resource"
     :loading="loading"
     :error="error"
+    :last-error="lastError"
     :item-title="itemTitle"
     :validation-schema="validationSchema"
     page="EDIT"
@@ -30,6 +31,7 @@ defineProps<{
   resource?: string
   loading: boolean
   error: string | null
+  lastError?: Error | null
   itemTitle?: string
   validationSchema?: ValidationSchema
 }>()

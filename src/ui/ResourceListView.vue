@@ -120,6 +120,7 @@ const props = defineProps<{
   resource?: string
   loading: boolean
   error: string | null
+  lastError?: Error | null
   onRowClick?: (item: ResourceListItem<Record<string, unknown>>) => void
   itemActions?: ResourceItemAction[]
 }>()

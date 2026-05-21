@@ -33,6 +33,7 @@
       :resource="route.meta.spec?.name"
       :loading="store.loading.list"
       :error="store.error"
+      :last-error="store.lastError"
       :on-row-click="navigateToItem"
       :item-actions="route.meta.spec?.actions?.resource"
     />
@@ -222,6 +223,7 @@ const customProps = computed<ResourceListPageProps>(() => ({
   resource: route.meta.spec?.name,
   loading: store.loading.list,
   error: store.error,
+  lastError: store.lastError,
   itemsMeta: store.itemsMeta,
   page: page.value,
   search: search.value,
