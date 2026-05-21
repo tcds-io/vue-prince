@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { configureVuePrince, createResourceApi } from '../src'
+import { configureVuePrince, createResourceApi, ResourceApiError } from '../src'
 import { createResourceController } from '../src'
 
 const BASE_API = '/api/companies'
@@ -54,6 +54,83 @@ describe('createResourceController', () => {
     expect(store.schemaLoaded).toBe(false)
     expect(store.loading.list).toBe(false)
     expect(store.error).toBeNull()
+    expect(store.lastError).toBeNull()
+  })
+
+  describe('lastError', () => {
+    it('captures the thrown ResourceApiError on a non-2xx response', async () => {
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          status: 200,
+          ok: true,
+          json: () => Promise.resolve({ schema: [], permissions: {} }),
+        })
+        .mockResolvedValueOnce({
+          status: 422,
+          ok: false,
+          json: () => Promise.resolve({ message: 'invalid', errors: { name: ['required'] } }),
+        })
+      const { store: useStore } = createResourceController(makeSpec())
+      const store = useStore()
+      await store.create({ name: '' })
+      expect(store.lastError).toBeInstanceOf(ResourceApiError)
+      const err = store.lastError as ResourceApiError
+      expect(err.status).toBe(422)
+      expect(err.body).toEqual({ message: 'invalid', errors: { name: ['required'] } })
+      // string form preserved for backwards compat
+      expect(store.error).toContain('invalid')
+    })
+
+    it('captures a plain Error on a permission-denied throw', async () => {
+      configureVuePrince({ api: { baseUrl: 'https://api.example.com' }, userPermissions: () => [] })
+      global.fetch = mockFetch({ schema: [], permissions: { create: 'c' } })
+      const { store: useStore } = createResourceController(makeSpec())
+      const store = useStore()
+      await store.create({ name: 'Acme' })
+      expect(store.lastError).toBeInstanceOf(Error)
+      expect(store.lastError).not.toBeInstanceOf(ResourceApiError)
+      expect((store.lastError as Error).message).toBe('Permission denied: create')
+    })
+
+    it('is null on success', async () => {
+      global.fetch = mockFetchWithSchema({ data: { id: 1, name: 'Acme' }, meta: {} })
+      const { store: useStore } = createResourceController(makeSpec())
+      const store = useStore()
+      await store.create({ name: 'Acme' })
+      expect(store.lastError).toBeNull()
+      expect(store.error).toBeNull()
+    })
+
+    it('is reset to null at the start of the next call after a failure', async () => {
+      // First call fails
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          status: 200,
+          ok: true,
+          json: () => Promise.resolve({ schema: [], permissions: {} }),
+        })
+        .mockResolvedValueOnce({
+          status: 500,
+          ok: false,
+          json: () => Promise.resolve({ message: 'boom' }),
+        })
+      const { store: useStore } = createResourceController(makeSpec())
+      const store = useStore()
+      await store.create({ name: 'Acme' })
+      expect(store.lastError).toBeInstanceOf(ResourceApiError)
+
+      // Second call succeeds — lastError must be reset
+      global.fetch = vi.fn().mockResolvedValueOnce({
+        status: 200,
+        ok: true,
+        json: () => Promise.resolve({ data: { id: 1, name: 'Acme' }, meta: {} }),
+      })
+      await store.create({ name: 'Acme' })
+      expect(store.lastError).toBeNull()
+      expect(store.error).toBeNull()
+    })
   })
 
   describe('fetchSchema()', () => {

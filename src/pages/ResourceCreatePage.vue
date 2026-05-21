@@ -9,6 +9,7 @@
     :resource="route.meta.spec?.name"
     :loading="store.loading.create"
     :error="store.error"
+    :last-error="store.lastError"
     :validation-schema="route.meta.spec?.validationSchema"
     @submit="submit"
     @cancel="cancel"
@@ -76,6 +77,7 @@ const customProps = computed<ResourceCreatePageProps>(() => ({
   resource: route.meta.spec?.name,
   loading: store.loading.create,
   error: store.error,
+  lastError: store.lastError,
   submit,
   cancel,
 }))

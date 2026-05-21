@@ -72,6 +72,7 @@ const props = defineProps<{
   resource?: string
   loading: boolean
   error: string | null
+  lastError?: Error | null
   itemTitle?: string
 }>()
 

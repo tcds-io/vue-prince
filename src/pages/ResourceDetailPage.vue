@@ -9,6 +9,7 @@
       :resource="route.meta.spec?.name"
       :loading="store.loading.get"
       :error="store.error"
+      :last-error="store.lastError"
       :item-title="itemTitle"
     >
       <template v-if="resourceActions.length" #header>
@@ -112,6 +113,7 @@ const customProps = computed<ResourceViewPageProps>(() => ({
   resource: route.meta.spec?.name,
   loading: store.loading.get,
   error: store.error,
+  lastError: store.lastError,
   itemTitle: itemTitle.value,
   back,
   edit,

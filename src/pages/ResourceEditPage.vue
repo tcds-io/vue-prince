@@ -9,6 +9,7 @@
     :resource="route.meta.spec?.name"
     :loading="store.loading.get || store.loading.update"
     :error="store.error"
+    :last-error="store.lastError"
     :item-title="itemTitle"
     :validation-schema="route.meta.spec?.validationSchema"
     @submit="submit"
@@ -78,6 +79,7 @@ const customProps = computed<ResourceEditPageProps>(() => ({
   resource: route.meta.spec?.name,
   loading: store.loading.get || store.loading.update,
   error: store.error,
+  lastError: store.lastError,
   itemTitle: itemTitle.value,
   submit,
   cancel,
