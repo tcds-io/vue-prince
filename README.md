@@ -198,6 +198,8 @@ type ResourceFieldDef = {
 | `boolean`      | `boolean`        | Checkbox                             |
 | `datetime`     | `string`         | Datetime-local input                 |
 | `enum`         | `string`         | Select (requires `values`)           |
+| `phone`        | `string`         | Text input (override via `fields.phone`)    |
+| `password`     | `string`         | Text input (override via `fields.password`) |
 | `ResourceSpec` | `number` (FK id) | Autocomplete (form) / link (display) |
 
 Unknown API types fall back to `string`.

@@ -17,7 +17,17 @@ import {
 } from '../src/ui/fields'
 
 describe('normalizeFieldType', () => {
-  it.each(['integer', 'number', 'string', 'text', 'boolean', 'datetime', 'enum', 'phone'] as const)(
+  it.each([
+    'integer',
+    'number',
+    'string',
+    'text',
+    'boolean',
+    'datetime',
+    'enum',
+    'phone',
+    'password',
+  ] as const)(
     'passes through known type: %s',
     (type) => expect(normalizeFieldType(type)).toBe(type),
   )
@@ -186,6 +196,12 @@ describe('resolveFieldComponent', () => {
     const MyPhoneField = {}
     configureVuePrince({ api: { baseUrl: '' }, fields: { phone: MyPhoneField as any } })
     expect(resolveFieldComponent('phone')).toBe(MyPhoneField)
+  })
+
+  it('uses a custom password component registered via fields.password', () => {
+    const MyPasswordField = {}
+    configureVuePrince({ api: { baseUrl: '' }, fields: { password: MyPasswordField as any } })
+    expect(resolveFieldComponent('password')).toBe(MyPasswordField)
   })
 })
 

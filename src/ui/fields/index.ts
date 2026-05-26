@@ -35,6 +35,7 @@ export const defaultFieldComponents: Record<SpecFieldType, Component> = {
   datetime: DateTimeField,
   enum: SelectField,
   phone: TextField,
+  password: TextField,
 }
 
 const knownFieldTypes = new Set<string>(Object.keys(defaultFieldComponents))
