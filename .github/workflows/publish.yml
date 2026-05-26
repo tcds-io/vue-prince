@@ -60,7 +60,7 @@ jobs:
           echo "Release type: $BUMP ($CURRENT vs ${PREV_TAG:-none})"
 
       - name: Set package version
-        run: npm version ${{ steps.release_type.outputs.version }} --no-git-tag-version
+        run: npm pkg set version=${{ steps.release_type.outputs.version }}
 
       - name: Type-check
         run: npm run typecheck
