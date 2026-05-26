@@ -11,6 +11,7 @@ export type SpecFieldType =
   | 'datetime'
   | 'enum'
   | 'phone'
+  | 'password'
 
 type SpecFieldTypeToTs = {
   integer: number
@@ -21,6 +22,7 @@ type SpecFieldTypeToTs = {
   datetime: string
   enum: string
   phone: string
+  password: string
 }
 
 // Maps a field's `type` to its TypeScript value type.

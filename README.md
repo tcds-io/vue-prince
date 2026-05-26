@@ -189,16 +189,18 @@ type ResourceFieldDef = {
 
 ### Field types
 
-| `type`         | TS type          | Default component                    |
-| -------------- | ---------------- | ------------------------------------ |
-| `string`       | `string`         | Text input / text display            |
-| `text`         | `string`         | Textarea / text display              |
-| `integer`      | `number`         | Number input                         |
-| `number`       | `number`         | Number input                         |
-| `boolean`      | `boolean`        | Checkbox                             |
-| `datetime`     | `string`         | Datetime-local input                 |
-| `enum`         | `string`         | Select (requires `values`)           |
-| `ResourceSpec` | `number` (FK id) | Autocomplete (form) / link (display) |
+| `type`         | TS type          | Default component                           |
+| -------------- | ---------------- | ------------------------------------------- |
+| `string`       | `string`         | Text input / text display                   |
+| `text`         | `string`         | Textarea / text display                     |
+| `integer`      | `number`         | Number input                                |
+| `number`       | `number`         | Number input                                |
+| `boolean`      | `boolean`        | Checkbox                                    |
+| `datetime`     | `string`         | Datetime-local input                        |
+| `enum`         | `string`         | Select (requires `values`)                  |
+| `phone`        | `string`         | Text input (override via `fields.phone`)    |
+| `password`     | `string`         | Text input (override via `fields.password`) |
+| `ResourceSpec` | `number` (FK id) | Autocomplete (form) / link (display)        |
 
 Unknown API types fall back to `string`.
 

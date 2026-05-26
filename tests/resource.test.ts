@@ -146,6 +146,19 @@ describe('defineResource', () => {
     })
   })
 
+  it('compiles with a password field type and infers it as string', () => {
+    defineResource({
+      name: 'user',
+      route: '/users',
+      api: mockApi,
+      fields: {
+        password: { type: 'password' as const },
+      },
+      // .toUpperCase only exists on string — proves password infers as string
+      title: (item) => item.password.toUpperCase(),
+    })
+  })
+
   it('accepts resource-ref fields', () => {
     const userSpec: ResourceSpec = { name: 'user', route: '/users', api: mockApi }
     const result = defineResource({
@@ -174,6 +187,7 @@ describe('InferResourceModel', () => {
       joined_at: { type: 'datetime' as const },
       role: { type: 'enum' as const },
       phone: { type: 'phone' as const },
+      password: { type: 'password' as const },
     },
   })
 
@@ -215,6 +229,11 @@ describe('InferResourceModel', () => {
   it('infers phone fields as string', () => {
     type M = InferResourceModel<typeof _userSpec>
     expectTypeOf<M['phone']>().toEqualTypeOf<string>()
+  })
+
+  it('infers password fields as string', () => {
+    type M = InferResourceModel<typeof _userSpec>
+    expectTypeOf<M['password']>().toEqualTypeOf<string>()
   })
 
   it('infers resource-ref fields as number', () => {
