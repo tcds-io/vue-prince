@@ -27,9 +27,8 @@ describe('normalizeFieldType', () => {
     'enum',
     'phone',
     'password',
-  ] as const)(
-    'passes through known type: %s',
-    (type) => expect(normalizeFieldType(type)).toBe(type),
+  ] as const)('passes through known type: %s', (type) =>
+    expect(normalizeFieldType(type)).toBe(type),
   )
 
   it('falls back to string for unknown types', () => {
