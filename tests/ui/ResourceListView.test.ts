@@ -147,6 +147,85 @@ describe('ResourceListView', () => {
     })
   })
 
+  describe('sortable columns', () => {
+    const sortableFields = {
+      id: { type: 'integer' as const },
+      status: { type: 'enum' as const, list: { sortable: true } },
+    }
+
+    function mountSortable(overrides: Record<string, unknown> = {}) {
+      return mountView({ fields: sortableFields, onSort: vi.fn(), ...overrides })
+    }
+
+    it('renders a toggle button only for sortable columns', () => {
+      const wrapper = mountSortable()
+      const headers = wrapper.findAll('th')
+      expect(headers[0].find('button').exists()).toBe(false)
+      expect(headers[1].find('button').exists()).toBe(true)
+    })
+
+    it('keeps the column label on the toggle button', () => {
+      const wrapper = mountSortable({ labels: { status: 'Account Status' } })
+      expect(wrapper.findAll('th')[1].text()).toContain('Account Status')
+    })
+
+    it('marks sortable headers with the sortable class', () => {
+      const wrapper = mountSortable()
+      expect(wrapper.findAll('th')[1].classes()).toContain('field--sortable')
+      expect(wrapper.findAll('th')[0].classes()).not.toContain('field--sortable')
+    })
+
+    it('renders no toggle when onSort is absent', () => {
+      const wrapper = mountView({ fields: sortableFields })
+      expect(wrapper.find('th button').exists()).toBe(false)
+    })
+
+    it('calls onSort with the column name on click', async () => {
+      const onSort = vi.fn()
+      const wrapper = mountSortable({ onSort })
+      await wrapper.findAll('th')[1].find('button').trigger('click')
+      expect(onSort).toHaveBeenCalledWith('status')
+    })
+
+    it('reports aria-sort none on an unsorted sortable column', () => {
+      const wrapper = mountSortable()
+      expect(wrapper.findAll('th')[1].attributes('aria-sort')).toBe('none')
+    })
+
+    it('reports aria-sort ascending on the sorted column', () => {
+      const wrapper = mountSortable({ sort: { column: 'status', direction: 'asc' } })
+      expect(wrapper.findAll('th')[1].attributes('aria-sort')).toBe('ascending')
+    })
+
+    it('reports aria-sort descending on the sorted column', () => {
+      const wrapper = mountSortable({ sort: { column: 'status', direction: 'desc' } })
+      expect(wrapper.findAll('th')[1].attributes('aria-sort')).toBe('descending')
+    })
+
+    it('omits aria-sort on columns that are not sortable', () => {
+      const wrapper = mountSortable()
+      expect(wrapper.findAll('th')[0].attributes('aria-sort')).toBeUndefined()
+    })
+
+    it('marks the sorted column with the sorted class', () => {
+      const wrapper = mountSortable({ sort: { column: 'status', direction: 'asc' } })
+      expect(wrapper.findAll('th')[1].classes()).toContain('field--sorted')
+    })
+
+    it('shows a direction indicator for the sorted column', () => {
+      const ascending = mountSortable({ sort: { column: 'status', direction: 'asc' } })
+      expect(ascending.find('.prince-sort-indicator').text()).toBe('↑')
+
+      const descending = mountSortable({ sort: { column: 'status', direction: 'desc' } })
+      expect(descending.find('.prince-sort-indicator').text()).toBe('↓')
+    })
+
+    it('shows a neutral indicator when the column is not the sorted one', () => {
+      const wrapper = mountSortable({ sort: { column: 'id', direction: 'asc' } })
+      expect(wrapper.find('.prince-sort-indicator').text()).toBe('↕')
+    })
+  })
+
   describe('fields.list.formatter', () => {
     const refSchema = [{ name: 'company_id', type: 'integer' }]
     const refItems = [
