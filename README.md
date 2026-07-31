@@ -365,6 +365,62 @@ Prefer `lastError` when you need `.status` / `.body`; `error` (string) remains f
 
 ---
 
+## Sorting
+
+Opt a column in with `list: { sortable: true }` and its table header becomes a toggle:
+
+```ts
+export const productResource = defineResource({
+  name: 'product',
+  route: '/products',
+  api: () => createResourceApi({ path: '/api/products' }),
+  fields: {
+    id: { type: 'integer' },
+    name: { type: 'string', list: { sortable: true } },
+    price: { type: 'number', list: { sortable: true } },
+    company_id: { type: () => companyResource },
+  },
+})
+```
+
+Clicking a sortable header cycles it through **ascending → descending → unsorted**. Headers with no
+`sortable` flag render as plain text, so nothing changes for resources that don't opt in.
+
+Sorting lives in the URL as `?sort=column:direction`, which makes a sorted list linkable and
+survives a reload:
+
+```
+/products?page=1&sort=name:asc
+/products?page=1&sort=price:desc
+```
+
+The parameter is forwarded verbatim to the backend list request, where `laravel-prince` turns it into
+an `ORDER BY`. Sorting resets to page 1 and preserves any active search or column filters; paging and
+searching preserve the active sort.
+
+A hand-written multi-column value (`?sort=name:asc,price:desc`) is passed through to the backend
+untouched — the headers reflect and toggle the first column.
+
+### Reading the sort state in a custom page
+
+A `list` page override receives the parsed sort plus the toggle callback:
+
+```vue
+<script setup lang="ts">
+import type { ResourceListPageProps } from '@tcds-io/vue-prince'
+
+const props = defineProps<ResourceListPageProps>()
+// props.sort        — { column, direction } | null
+// props.onSort(col) — toggle sorting for a column
+</script>
+```
+
+`LayoutTableProps` carries the same two entries, so a `layout.table` wrapper can render its own
+indicator. `ResourceListView` marks sortable headers with `.field--sortable`, the active one with
+`.field--sorted`, and sets `aria-sort` on every sortable `th`.
+
+---
+
 ## Custom field components
 
 Every field component receives `FieldProps` via `defineProps` and the value via `defineModel`:
@@ -484,19 +540,21 @@ const props = defineProps<ResourceListPageProps>()
 // props.lastError     — raw Error | null (narrow with `instanceof ResourceApiError`)
 // props.listMeta      — pagination info (total, last_page, per_page, …)
 // props.page          — current page number
+// props.sort          — { column, direction } | null
 // props.navigateToItem(item)
 // props.goToPage(n)
 // props.createNew()
+// props.onSort(column) — cycle a column asc → desc → unsorted
 </script>
 ```
 
-| Page     | Props interface           | Key props                                                              |
-| -------- | ------------------------- | ---------------------------------------------------------------------- |
-| `list`   | `ResourceListPageProps`   | `items`, `listMeta`, `page`, `navigateToItem`, `goToPage`, `createNew` |
-| `view`   | `ResourceViewPageProps`   | `item`, `itemTitle`, `back`, `edit`, `confirmDelete`                   |
-| `create` | `ResourceCreatePageProps` | `schema`, `submit(data)`, `cancel`                                     |
-| `edit`   | `ResourceEditPageProps`   | `item`, `itemTitle`, `submit(data)`, `cancel`                          |
-| `delete` | `ResourceDeletePageProps` | `item`, `itemTitle`, `confirm`, `cancel`                               |
+| Page     | Props interface           | Key props                                                                                |
+| -------- | ------------------------- | ---------------------------------------------------------------------------------------- |
+| `list`   | `ResourceListPageProps`   | `items`, `listMeta`, `page`, `sort`, `navigateToItem`, `goToPage`, `createNew`, `onSort` |
+| `view`   | `ResourceViewPageProps`   | `item`, `itemTitle`, `back`, `edit`, `confirmDelete`                                     |
+| `create` | `ResourceCreatePageProps` | `schema`, `submit(data)`, `cancel`                                                       |
+| `edit`   | `ResourceEditPageProps`   | `item`, `itemTitle`, `submit(data)`, `cancel`                                            |
+| `delete` | `ResourceDeletePageProps` | `item`, `itemTitle`, `confirm`, `cancel`                                                 |
 
 All interfaces also include `schema`, `labels`, `resource`, `loading`, `error`, and `lastError`.
 
@@ -590,7 +648,7 @@ defineProps<LayoutCardProps>()
 
 ### `table`
 
-Wraps or replaces the list table. Receives `LayoutTableProps` and a `<slot />` with the default `<table>`.
+Wraps or replaces the list table. Receives `LayoutTableProps` — including `sort` and `onSort` for rendering a custom sort indicator — and a `<slot />` with the default `<table>`.
 
 ### `tabs`
 

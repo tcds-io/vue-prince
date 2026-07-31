@@ -40,6 +40,7 @@ export type ResourceFieldDefList = {
   show?: boolean
   align?: 'left' | 'center' | 'right'
   width?: number
+  sortable?: boolean
   formatter?: (value: AnyValue) => string
 }
 

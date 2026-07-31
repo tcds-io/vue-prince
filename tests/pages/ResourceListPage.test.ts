@@ -256,6 +256,98 @@ describe('ResourceListPage', () => {
     })
   })
 
+  describe('sorting', () => {
+    function mountCustom(query: Record<string, string> = {}) {
+      return mountPage({ ...BASE_SPEC, components: { list: CustomList } }, query)
+    }
+
+    it('forwards the sort query param to list', async () => {
+      mountPage(BASE_SPEC, { sort: 'name:desc' })
+      await flushPromises()
+      expect(store.list).toHaveBeenCalledWith({ page: '1', sort: 'name:desc' })
+    })
+
+    it('forwards a multi-column sort value untouched', async () => {
+      mountPage(BASE_SPEC, { sort: 'name:desc,id:asc' })
+      await flushPromises()
+      expect(store.list).toHaveBeenCalledWith({ page: '1', sort: 'name:desc,id:asc' })
+    })
+
+    it('sends no sort param when the query has none', async () => {
+      mountPage()
+      await flushPromises()
+      expect(store.list).toHaveBeenCalledWith({ page: '1' })
+    })
+
+    it('keeps sort out of the search params', () => {
+      const wrapper = mountCustom({ sort: 'name:asc', search: '%acme%' })
+      expect((wrapper.findComponent(CustomList).vm.$attrs as any).search).toEqual({
+        search: '%acme%',
+      })
+    })
+
+    it('exposes the parsed sort to a custom list page', () => {
+      const wrapper = mountCustom({ sort: 'name:desc' })
+      expect((wrapper.findComponent(CustomList).vm.$attrs as any).sort).toEqual({
+        column: 'name',
+        direction: 'desc',
+      })
+    })
+
+    it('passes the parsed sort to ResourceListView', () => {
+      const wrapper = mountPage(BASE_SPEC, { sort: 'name:asc' })
+      expect(wrapper.findComponent(ResourceListView).props('sort' as any)).toEqual({
+        column: 'name',
+        direction: 'asc',
+      })
+    })
+
+    it('sorts an unsorted column ascending', () => {
+      const wrapper = mountPage()
+      wrapper.findComponent(ResourceListView).props('onSort' as any)('name')
+      expect(mockPush).toHaveBeenCalledWith({ query: { page: '1', sort: 'name:asc' } })
+    })
+
+    it('flips an ascending column to descending', () => {
+      const wrapper = mountPage(BASE_SPEC, { sort: 'name:asc' })
+      wrapper.findComponent(ResourceListView).props('onSort' as any)('name')
+      expect(mockPush).toHaveBeenCalledWith({ query: { page: '1', sort: 'name:desc' } })
+    })
+
+    it('clears the sort when a descending column is toggled again', () => {
+      const wrapper = mountPage(BASE_SPEC, { sort: 'name:desc' })
+      wrapper.findComponent(ResourceListView).props('onSort' as any)('name')
+      expect(mockPush).toHaveBeenCalledWith({ query: { page: '1' } })
+    })
+
+    it('resets to page 1 and keeps active filters when sorting', () => {
+      const wrapper = mountPage(BASE_SPEC, { page: '4', search: '%acme%' })
+      wrapper.findComponent(ResourceListView).props('onSort' as any)('name')
+      expect(mockPush).toHaveBeenCalledWith({
+        query: { search: '%acme%', page: '1', sort: 'name:asc' },
+      })
+    })
+
+    it('keeps the active sort when the search changes', () => {
+      vi.useFakeTimers()
+      const wrapper = mountCustom({ sort: 'name:desc' })
+      const { onSearch } = wrapper.findComponent(CustomList).vm.$attrs as any
+      onSearch({ search: '%foo%' })
+      vi.advanceTimersByTime(300)
+      expect(mockPush).toHaveBeenCalledWith({
+        query: { page: '1', sort: 'name:desc', search: '%foo%' },
+      })
+      vi.useRealTimers()
+    })
+
+    it('keeps the active sort when paging', () => {
+      const wrapper = mountCustom({ sort: 'name:desc' })
+      const { goToPage } = wrapper.findComponent(CustomList).vm.$attrs as any
+      goToPage(3)
+      expect(mockPush).toHaveBeenCalledWith({ query: { page: '3', sort: 'name:desc' } })
+    })
+  })
+
   describe('pages window computed', () => {
     it('shows up to 3 page numbers centred on the current page', async () => {
       store.itemsMeta = { current_page: 5, total: 100, last_page: 10, per_page: 10, schema: [] }

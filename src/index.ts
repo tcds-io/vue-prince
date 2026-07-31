@@ -12,6 +12,7 @@ export type {
   VuePrinceConfig,
 } from './config'
 export * from './api'
+export * from './sort'
 export * from './resource'
 export * from './resource-api'
 export * from './resource-controller'
