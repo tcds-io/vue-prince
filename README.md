@@ -1,13 +1,25 @@
-# @tcds-io/vue-prince
+# @hivesper/vue-prince
 
 Lightweight resource-oriented CRUD framework for Vue 3 + Pinia. One `defineResource` call generates a typed API client, a Pinia store, and four routes with pre-built page components.
+
+> **This is a Vesper-maintained fork of [tcds-io/vue-prince](https://github.com/tcds-io/vue-prince).** It is published as
+> `@hivesper/vue-prince` on GitHub Packages so we can ship changes without waiting on upstream review. The API is
+> otherwise identical to upstream — changes made here are offered back to `tcds-io` where they are generally useful.
 
 ---
 
 ## Installation
 
+Published to GitHub Packages, so the `@hivesper` scope needs to point at that registry:
+
+```
+# .npmrc
+@hivesper:registry=https://npm.pkg.github.com/
+//npm.pkg.github.com/:_authToken=${YOUR_GITHUB_TOKEN}
+```
+
 ```bash
-npm install @tcds-io/vue-prince
+npm install @hivesper/vue-prince
 ```
 
 ---
@@ -38,7 +50,7 @@ Data always flows **UI → store → API**. Components never call the API direct
 ### 1. Configure (once, in `main.ts`)
 
 ```ts
-import { configureVuePrince } from '@tcds-io/vue-prince'
+import { configureVuePrince } from '@hivesper/vue-prince'
 
 configureVuePrince({
   api: {
@@ -52,8 +64,8 @@ configureVuePrince({
 
 ```ts
 // features/companies/company.resource.ts
-import { defineResource, createResourceApi, createResourceController } from '@tcds-io/vue-prince'
-import type { InferResourceModel } from '@tcds-io/vue-prince'
+import { defineResource, createResourceApi, createResourceController } from '@hivesper/vue-prince'
+import type { InferResourceModel } from '@hivesper/vue-prince'
 
 export const companyResource = defineResource({
   name: 'company',
@@ -76,7 +88,7 @@ export const { store: useCompanyStore } = createResourceController(companyResour
 
 ```ts
 // app/router.ts
-import { createResourceRoutes } from '@tcds-io/vue-prince'
+import { createResourceRoutes } from '@hivesper/vue-prince'
 import { companyResource } from '@/features/companies/company.resource'
 
 export const router = createRouter({
@@ -278,7 +290,7 @@ type ResourceApi<Model> = {
 On non-2xx responses every method throws a `ResourceApiError` carrying the parsed response body so consumers can surface backend messages:
 
 ```ts
-import { ResourceApiError } from '@tcds-io/vue-prince'
+import { ResourceApiError } from '@hivesper/vue-prince'
 
 try {
   await api.create({ name: '' })
@@ -347,7 +359,7 @@ All actions set `loading = true` while in-flight and populate `error` (string fo
 Reach for `lastError` when you need to inspect the underlying failure — for example, mapping a backend error code to a friendly message in a custom page:
 
 ```ts
-import { ResourceApiError } from '@tcds-io/vue-prince'
+import { ResourceApiError } from '@hivesper/vue-prince'
 
 watch(
   () => store.lastError,
@@ -407,7 +419,7 @@ A `list` page override receives the parsed sort plus the toggle callback:
 
 ```vue
 <script setup lang="ts">
-import type { ResourceListPageProps } from '@tcds-io/vue-prince'
+import type { ResourceListPageProps } from '@hivesper/vue-prince'
 
 const props = defineProps<ResourceListPageProps>()
 // props.sort        — { column, direction } | null
@@ -438,8 +450,8 @@ interface FieldProps {
 
 ```vue
 <script setup lang="ts">
-import type { FieldProps } from '@tcds-io/vue-prince'
-import { useFieldEditable } from '@tcds-io/vue-prince'
+import type { FieldProps } from '@hivesper/vue-prince'
+import { useFieldEditable } from '@hivesper/vue-prince'
 
 const value = defineModel<string>('value')
 const props = defineProps<FieldProps>()
@@ -528,7 +540,7 @@ Import the matching interface and pass it to `defineProps`:
 ```vue
 <!-- ProductListPage.vue -->
 <script setup lang="ts">
-import type { ResourceListPageProps } from '@tcds-io/vue-prince'
+import type { ResourceListPageProps } from '@hivesper/vue-prince'
 
 const props = defineProps<ResourceListPageProps>()
 // props.items         — current page of records
@@ -581,7 +593,7 @@ All interfaces also include `schema`, `labels`, `resource`, `loading`, `error`, 
 </template>
 
 <script setup lang="ts">
-import type { ResourceListPageProps } from '@tcds-io/vue-prince'
+import type { ResourceListPageProps } from '@hivesper/vue-prince'
 
 const props = defineProps<ResourceListPageProps>()
 </script>
@@ -600,7 +612,7 @@ const props = defineProps<ResourceListPageProps>()
 
 <script setup lang="ts">
 import { reactive } from 'vue'
-import type { ResourceEditPageProps } from '@tcds-io/vue-prince'
+import type { ResourceEditPageProps } from '@hivesper/vue-prince'
 
 const props = defineProps<ResourceEditPageProps>()
 const form = reactive({ name: (props.item?.name as string) ?? '' })
@@ -641,7 +653,7 @@ Replaces the entire card wrapper used on every built-in page. The component rece
 </template>
 
 <script setup lang="ts">
-import type { LayoutCardProps } from '@tcds-io/vue-prince'
+import type { LayoutCardProps } from '@hivesper/vue-prince'
 defineProps<LayoutCardProps>()
 </script>
 ```
