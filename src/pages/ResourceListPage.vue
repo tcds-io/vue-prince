@@ -36,6 +36,8 @@
       :last-error="store.lastError"
       :on-row-click="navigateToItem"
       :item-actions="route.meta.spec?.actions?.resource"
+      :sort="sort"
+      :on-sort="applySort"
     />
 
     <template #footer>
@@ -80,6 +82,7 @@ import type { ResourceListItem, ResourceSchemaField } from '../api'
 import type { ResourceListPageProps } from '../page-props'
 import type { ResourceFieldDef } from '../resource'
 import { hasPermission, hasActionPermission, isResourceRef, resolveFieldType } from '../resource'
+import { formatSort, parseSort, toggleSort } from '../sort'
 import { getConfig } from '../config'
 import PrinceButton from '../ui/PrinceButton.vue'
 import PrinceCard from '../ui/PrinceCard.vue'
@@ -120,8 +123,9 @@ const labels = useResourceLabels()
 
 const page = computed(() => Number(route.query.page ?? 1))
 const search = computed<Record<string, string>>(() => {
-  const { page: _, ...rest } = route.query
-  void _
+  const { page: _page, sort: _sort, ...rest } = route.query
+  void _page
+  void _sort
 
   return Object.fromEntries(
     Object.entries(rest)
@@ -129,6 +133,11 @@ const search = computed<Record<string, string>>(() => {
       .map(([k, v]) => [k, v as string]),
   )
 })
+
+// Kept as the raw query value rather than the parsed pair, so a hand-written multi-column
+// `?sort=a:asc,b:desc` reaches the backend intact even though the headers toggle one column.
+const sortParam = computed(() => (typeof route.query.sort === 'string' ? route.query.sort : ''))
+const sort = computed(() => parseSort(sortParam.value))
 
 const searchInput = ref(((route.query.search as string) ?? '').replace(/%/g, ''))
 watch(
@@ -142,7 +151,9 @@ let searchDebounce: ReturnType<typeof setTimeout>
 function scheduleSearch(params: Record<string, string>) {
   clearTimeout(searchDebounce)
   searchDebounce = setTimeout(() => {
-    router.push({ query: { page: '1', ...params } })
+    router.push({
+      query: { page: '1', ...(sortParam.value ? { sort: sortParam.value } : {}), ...params },
+    })
   }, 300)
 }
 function onSearchInput() {
@@ -157,7 +168,11 @@ const pages = computed<number[]>(() => {
   return Array.from({ length: end - start + 1 }, (_, i) => start + i)
 })
 
-watch([page, search], ([p, s]) => store.list({ page: String(p), ...s }), { immediate: true })
+watch(
+  [page, search, sortParam],
+  ([p, s, by]) => store.list({ page: String(p), ...s, ...(by ? { sort: by } : {}) }),
+  { immediate: true },
+)
 
 onMounted(() => {
   if (!hasSpecFields) store.fetchSchema()
@@ -165,6 +180,16 @@ onMounted(() => {
 
 function goToPage(p: number) {
   router.push({ query: { ...route.query, page: String(p) } })
+}
+
+function applySort(column: string) {
+  const next = toggleSort(sort.value, column)
+  const { sort: _sort, ...rest } = route.query
+  void _sort
+
+  router.push({
+    query: { ...rest, page: '1', ...(next ? { sort: formatSort(next) } : {}) },
+  })
 }
 
 function navigateToItem(item: ResourceListItem<Record<string, unknown>>) {
@@ -227,10 +252,12 @@ const customProps = computed<ResourceListPageProps>(() => ({
   itemsMeta: store.itemsMeta,
   page: page.value,
   search: search.value,
+  sort: sort.value,
   navigateToItem,
   goToPage,
   createNew,
   onSearch: scheduleSearch,
+  onSort: applySort,
   canCreate: canCreate.value,
 }))
 </script>

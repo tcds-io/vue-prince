@@ -4,7 +4,7 @@
       Failed to list {{ resourceLabelPlural }}
     </div>
     <div v-else :style="{ opacity: loading ? 0.5 : 1, transition: 'opacity 0.15s' }">
-      <component :is="tableWrapper" v-if="tableWrapper" v-bind="props">
+      <component :is="tableWrapper ?? PassThrough" v-bind="props">
         <table :class="['vue-resource', 'resource-table', resource && `${resource}-table`]">
           <thead>
             <tr>
@@ -15,10 +15,24 @@
                   `field--${field.type}`,
                   `field-${resource}-${field.name}`,
                   `field-${field.name}`,
+                  isSortable(field.name) && 'field--sortable',
+                  sort?.column === field.name && 'field--sorted',
                 ]"
                 :style="thStyle(field.name)"
+                :aria-sort="ariaSort(field.name)"
               >
-                {{ labels?.[field.name] ?? toFieldLabel(field.name) }}
+                <button
+                  v-if="isSortable(field.name)"
+                  type="button"
+                  class="vue-resource prince-sort-toggle"
+                  @click="onSort?.(field.name)"
+                >
+                  {{ labels?.[field.name] ?? toFieldLabel(field.name) }}
+                  <span class="vue-resource prince-sort-indicator" aria-hidden="true">{{
+                    sortIndicator(field.name)
+                  }}</span>
+                </button>
+                <template v-else>{{ labels?.[field.name] ?? toFieldLabel(field.name) }}</template>
               </th>
               <th v-if="visibleItemActions.length" class="field--actions" />
             </tr>
@@ -53,61 +67,16 @@
           </tbody>
         </table>
       </component>
-      <table v-else :class="['vue-resource', 'resource-table', resource && `${resource}-table`]">
-        <thead>
-          <tr>
-            <th
-              v-for="field in schema"
-              :key="field.name"
-              :class="[
-                `field--${field.type}`,
-                `field-${resource}-${field.name}`,
-                `field-${field.name}`,
-              ]"
-              :style="thStyle(field.name)"
-            >
-              {{ labels?.[field.name] ?? toFieldLabel(field.name) }}
-            </th>
-            <th v-if="visibleItemActions.length" class="field--actions" />
-          </tr>
-        </thead>
-        <tbody>
-          <tr
-            v-for="item in items"
-            :key="item.id"
-            :class="{ selectable: !!onRowClick }"
-            @click="onRowClick?.(item)"
-          >
-            <td
-              v-for="field in schema"
-              :key="field.name"
-              :class="[
-                `field--${field.type}`,
-                `field-${resource}-${field.name}`,
-                `field-${field.name}`,
-                item[field.name] != null && `field--${field.name}-${slugify(item[field.name])}`,
-              ]"
-              :style="tdStyle(field.name)"
-            >
-              {{
-                props.fields?.[field.name]?.list?.formatter?.(item[field.name]) ?? item[field.name]
-              }}
-            </td>
-            <td v-if="visibleItemActions.length" class="field--actions" @click.stop>
-              <component :is="dropdownComponent" :actions="resolveItemActions(item)" />
-            </td>
-          </tr>
-        </tbody>
-      </table>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, defineComponent } from 'vue'
 import type { ResourceListItem, ResourceSchemaField } from '../api'
 import type { ResourceFieldDef, ResourceItemAction } from '../resource'
 import { hasActionPermission } from '../resource'
+import type { ResourceSort } from '../sort'
 import { getConfig } from '../config'
 import { toFieldLabel, slugify } from './fields'
 import PrinceDropdown from './PrinceDropdown.vue'
@@ -123,7 +92,20 @@ const props = defineProps<{
   lastError?: Error | null
   onRowClick?: (item: ResourceListItem<Record<string, unknown>>) => void
   itemActions?: ResourceItemAction[]
+  sort?: ResourceSort | null
+  onSort?: (column: string) => void
 }>()
+
+// Renders the table unwrapped when no `layout.table` is configured, so the markup below
+// lives in one place instead of being duplicated across a v-if/v-else pair.
+const PassThrough = defineComponent({
+  name: 'PrinceTablePassThrough',
+  inheritAttrs: false,
+  setup:
+    (_, { slots }) =>
+    () =>
+      slots.default?.(),
+})
 
 const tableWrapper = getConfig().layout?.table
 const dropdownComponent = computed(() => getConfig().layout?.dropdown ?? PrinceDropdown)
@@ -148,6 +130,23 @@ function resolveItemActions(item: ResourceListItem<Record<string, unknown>>) {
     label: typeof a.label === 'function' ? a.label(item) : a.label,
     onClick: () => a.onClick(item),
   }))
+}
+
+function isSortable(name: string): boolean {
+  return !!props.onSort && props.fields?.[name]?.list?.sortable === true
+}
+
+function ariaSort(name: string): 'ascending' | 'descending' | 'none' | undefined {
+  if (!isSortable(name)) return undefined
+  if (props.sort?.column !== name) return 'none'
+
+  return props.sort.direction === 'asc' ? 'ascending' : 'descending'
+}
+
+function sortIndicator(name: string): string {
+  if (props.sort?.column !== name) return '↕'
+
+  return props.sort.direction === 'asc' ? '↑' : '↓'
 }
 
 function thStyle(name: string): Record<string, string> {
@@ -217,5 +216,33 @@ function tdStyle(name: string): Record<string, string> {
 
 .vue-resource.resource-table tbody tr.selectable:hover {
   background: var(--prince-color-surface, #f8f9fa);
+}
+
+.vue-resource.prince-sort-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.vue-resource.prince-sort-toggle:hover {
+  color: var(--prince-color-text, #212529);
+}
+
+.vue-resource.prince-sort-indicator {
+  opacity: 0.4;
+  font-size: 0.9em;
+}
+
+.vue-resource.resource-table th.field--sorted .prince-sort-indicator {
+  opacity: 1;
 }
 </style>

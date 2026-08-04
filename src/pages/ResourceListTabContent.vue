@@ -8,6 +8,8 @@
     :loading="loading"
     :error="error"
     :on-row-click="(row) => navigate(row as { id: string | number })"
+    :sort="sort"
+    :on-sort="applySort"
   />
   <div
     v-if="canCreate || (listMeta && listMeta.last_page > 1)"
@@ -49,6 +51,8 @@ import { useRouter } from 'vue-router'
 import type { ResourceListItem, ResourceListMetadata, ResourceSchemaField } from '../api'
 import type { ResourceSpec } from '../resource'
 import { hasPermission, isResourceRef, resolveFieldType } from '../resource'
+import type { ResourceSort } from '../sort'
+import { formatSort, toggleSort } from '../sort'
 import { createResourceController } from '../resource-controller'
 import ResourceListView from '../ui/ResourceListView.vue'
 import PrinceButton from '../ui/PrinceButton.vue'
@@ -64,6 +68,7 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 const page = ref(1)
 const listMeta = ref<ResourceListMetadata | null>(null)
+const sort = ref<ResourceSort | null>(null)
 
 const schema = computed<ResourceSchemaField[]>(() => {
   if (!props.spec.fields) return []
@@ -90,6 +95,7 @@ async function fetchItems(parentId: string | number, pg: number) {
     const res = await props.spec.api().list({
       [props.foreignKey]: String(parentId),
       page: String(pg),
+      ...(sort.value ? { sort: formatSort(sort.value) } : {}),
     })
     items.value = res.data as ResourceListItem<Record<string, unknown>>[]
     listMeta.value = res.meta as ResourceListMetadata
@@ -115,6 +121,11 @@ watch(
 
 function goToPage(p: number) {
   if (props.resourceId != null) fetchItems(props.resourceId, p)
+}
+
+function applySort(column: string) {
+  sort.value = toggleSort(sort.value, column)
+  if (props.resourceId != null) fetchItems(props.resourceId, 1)
 }
 
 function navigate(row: { id: string | number }) {

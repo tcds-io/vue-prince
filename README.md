@@ -1,13 +1,25 @@
-# @tcds-io/vue-prince
+# @hivesper/vue-prince
 
 Lightweight resource-oriented CRUD framework for Vue 3 + Pinia. One `defineResource` call generates a typed API client, a Pinia store, and four routes with pre-built page components.
+
+> **This is a Vesper-maintained fork of [tcds-io/vue-prince](https://github.com/tcds-io/vue-prince).** It is published as
+> `@hivesper/vue-prince` on GitHub Packages so we can ship changes without waiting on upstream review. The API is
+> otherwise identical to upstream — changes made here are offered back to `tcds-io` where they are generally useful.
 
 ---
 
 ## Installation
 
+Published to GitHub Packages, so the `@hivesper` scope needs to point at that registry:
+
+```
+# .npmrc
+@hivesper:registry=https://npm.pkg.github.com/
+//npm.pkg.github.com/:_authToken=${YOUR_GITHUB_TOKEN}
+```
+
 ```bash
-npm install @tcds-io/vue-prince
+npm install @hivesper/vue-prince
 ```
 
 ---
@@ -38,7 +50,7 @@ Data always flows **UI → store → API**. Components never call the API direct
 ### 1. Configure (once, in `main.ts`)
 
 ```ts
-import { configureVuePrince } from '@tcds-io/vue-prince'
+import { configureVuePrince } from '@hivesper/vue-prince'
 
 configureVuePrince({
   api: {
@@ -52,8 +64,8 @@ configureVuePrince({
 
 ```ts
 // features/companies/company.resource.ts
-import { defineResource, createResourceApi, createResourceController } from '@tcds-io/vue-prince'
-import type { InferResourceModel } from '@tcds-io/vue-prince'
+import { defineResource, createResourceApi, createResourceController } from '@hivesper/vue-prince'
+import type { InferResourceModel } from '@hivesper/vue-prince'
 
 export const companyResource = defineResource({
   name: 'company',
@@ -76,7 +88,7 @@ export const { store: useCompanyStore } = createResourceController(companyResour
 
 ```ts
 // app/router.ts
-import { createResourceRoutes } from '@tcds-io/vue-prince'
+import { createResourceRoutes } from '@hivesper/vue-prince'
 import { companyResource } from '@/features/companies/company.resource'
 
 export const router = createRouter({
@@ -278,7 +290,7 @@ type ResourceApi<Model> = {
 On non-2xx responses every method throws a `ResourceApiError` carrying the parsed response body so consumers can surface backend messages:
 
 ```ts
-import { ResourceApiError } from '@tcds-io/vue-prince'
+import { ResourceApiError } from '@hivesper/vue-prince'
 
 try {
   await api.create({ name: '' })
@@ -347,7 +359,7 @@ All actions set `loading = true` while in-flight and populate `error` (string fo
 Reach for `lastError` when you need to inspect the underlying failure — for example, mapping a backend error code to a friendly message in a custom page:
 
 ```ts
-import { ResourceApiError } from '@tcds-io/vue-prince'
+import { ResourceApiError } from '@hivesper/vue-prince'
 
 watch(
   () => store.lastError,
@@ -362,6 +374,62 @@ watch(
 Prefer `lastError` when you need `.status` / `.body`; `error` (string) remains for simple display.
 
 > `get()` returns the record directly rather than storing it in shared state. This prevents stale data from a previous navigation from appearing briefly on the new detail page.
+
+---
+
+## Sorting
+
+Opt a column in with `list: { sortable: true }` and its table header becomes a toggle:
+
+```ts
+export const productResource = defineResource({
+  name: 'product',
+  route: '/products',
+  api: () => createResourceApi({ path: '/api/products' }),
+  fields: {
+    id: { type: 'integer' },
+    name: { type: 'string', list: { sortable: true } },
+    price: { type: 'number', list: { sortable: true } },
+    company_id: { type: () => companyResource },
+  },
+})
+```
+
+Clicking a sortable header cycles it through **ascending → descending → unsorted**. Headers with no
+`sortable` flag render as plain text, so nothing changes for resources that don't opt in.
+
+Sorting lives in the URL as `?sort=column:direction`, which makes a sorted list linkable and
+survives a reload:
+
+```
+/products?page=1&sort=name:asc
+/products?page=1&sort=price:desc
+```
+
+The parameter is forwarded verbatim to the backend list request, where `laravel-prince` turns it into
+an `ORDER BY`. Sorting resets to page 1 and preserves any active search or column filters; paging and
+searching preserve the active sort.
+
+A hand-written multi-column value (`?sort=name:asc,price:desc`) is passed through to the backend
+untouched — the headers reflect and toggle the first column.
+
+### Reading the sort state in a custom page
+
+A `list` page override receives the parsed sort plus the toggle callback:
+
+```vue
+<script setup lang="ts">
+import type { ResourceListPageProps } from '@hivesper/vue-prince'
+
+const props = defineProps<ResourceListPageProps>()
+// props.sort        — { column, direction } | null
+// props.onSort(col) — toggle sorting for a column
+</script>
+```
+
+`LayoutTableProps` carries the same two entries, so a `layout.table` wrapper can render its own
+indicator. `ResourceListView` marks sortable headers with `.field--sortable`, the active one with
+`.field--sorted`, and sets `aria-sort` on every sortable `th`.
 
 ---
 
@@ -382,8 +450,8 @@ interface FieldProps {
 
 ```vue
 <script setup lang="ts">
-import type { FieldProps } from '@tcds-io/vue-prince'
-import { useFieldEditable } from '@tcds-io/vue-prince'
+import type { FieldProps } from '@hivesper/vue-prince'
+import { useFieldEditable } from '@hivesper/vue-prince'
 
 const value = defineModel<string>('value')
 const props = defineProps<FieldProps>()
@@ -472,7 +540,7 @@ Import the matching interface and pass it to `defineProps`:
 ```vue
 <!-- ProductListPage.vue -->
 <script setup lang="ts">
-import type { ResourceListPageProps } from '@tcds-io/vue-prince'
+import type { ResourceListPageProps } from '@hivesper/vue-prince'
 
 const props = defineProps<ResourceListPageProps>()
 // props.items         — current page of records
@@ -484,19 +552,21 @@ const props = defineProps<ResourceListPageProps>()
 // props.lastError     — raw Error | null (narrow with `instanceof ResourceApiError`)
 // props.listMeta      — pagination info (total, last_page, per_page, …)
 // props.page          — current page number
+// props.sort          — { column, direction } | null
 // props.navigateToItem(item)
 // props.goToPage(n)
 // props.createNew()
+// props.onSort(column) — cycle a column asc → desc → unsorted
 </script>
 ```
 
-| Page     | Props interface           | Key props                                                              |
-| -------- | ------------------------- | ---------------------------------------------------------------------- |
-| `list`   | `ResourceListPageProps`   | `items`, `listMeta`, `page`, `navigateToItem`, `goToPage`, `createNew` |
-| `view`   | `ResourceViewPageProps`   | `item`, `itemTitle`, `back`, `edit`, `confirmDelete`                   |
-| `create` | `ResourceCreatePageProps` | `schema`, `submit(data)`, `cancel`                                     |
-| `edit`   | `ResourceEditPageProps`   | `item`, `itemTitle`, `submit(data)`, `cancel`                          |
-| `delete` | `ResourceDeletePageProps` | `item`, `itemTitle`, `confirm`, `cancel`                               |
+| Page     | Props interface           | Key props                                                                                |
+| -------- | ------------------------- | ---------------------------------------------------------------------------------------- |
+| `list`   | `ResourceListPageProps`   | `items`, `listMeta`, `page`, `sort`, `navigateToItem`, `goToPage`, `createNew`, `onSort` |
+| `view`   | `ResourceViewPageProps`   | `item`, `itemTitle`, `back`, `edit`, `confirmDelete`                                     |
+| `create` | `ResourceCreatePageProps` | `schema`, `submit(data)`, `cancel`                                                       |
+| `edit`   | `ResourceEditPageProps`   | `item`, `itemTitle`, `submit(data)`, `cancel`                                            |
+| `delete` | `ResourceDeletePageProps` | `item`, `itemTitle`, `confirm`, `cancel`                                                 |
 
 All interfaces also include `schema`, `labels`, `resource`, `loading`, `error`, and `lastError`.
 
@@ -523,7 +593,7 @@ All interfaces also include `schema`, `labels`, `resource`, `loading`, `error`, 
 </template>
 
 <script setup lang="ts">
-import type { ResourceListPageProps } from '@tcds-io/vue-prince'
+import type { ResourceListPageProps } from '@hivesper/vue-prince'
 
 const props = defineProps<ResourceListPageProps>()
 </script>
@@ -542,7 +612,7 @@ const props = defineProps<ResourceListPageProps>()
 
 <script setup lang="ts">
 import { reactive } from 'vue'
-import type { ResourceEditPageProps } from '@tcds-io/vue-prince'
+import type { ResourceEditPageProps } from '@hivesper/vue-prince'
 
 const props = defineProps<ResourceEditPageProps>()
 const form = reactive({ name: (props.item?.name as string) ?? '' })
@@ -583,14 +653,14 @@ Replaces the entire card wrapper used on every built-in page. The component rece
 </template>
 
 <script setup lang="ts">
-import type { LayoutCardProps } from '@tcds-io/vue-prince'
+import type { LayoutCardProps } from '@hivesper/vue-prince'
 defineProps<LayoutCardProps>()
 </script>
 ```
 
 ### `table`
 
-Wraps or replaces the list table. Receives `LayoutTableProps` and a `<slot />` with the default `<table>`.
+Wraps or replaces the list table. Receives `LayoutTableProps` — including `sort` and `onSort` for rendering a custom sort indicator — and a `<slot />` with the default `<table>`.
 
 ### `tabs`
 

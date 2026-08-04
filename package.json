@@ -1,14 +1,17 @@
 {
-  "name": "@tcds-io/vue-prince",
-  "version": "1.4.0",
+  "name": "@hivesper/vue-prince",
+  "version": "1.5.0",
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tcds-io/vue-prince.git"
+    "url": "git+https://github.com/hivesper/vue-prince.git"
   },
-  "homepage": "https://github.com/tcds-io/vue-prince#readme",
+  "homepage": "https://github.com/hivesper/vue-prince#readme",
   "bugs": {
-    "url": "https://github.com/tcds-io/vue-prince/issues"
+    "url": "https://github.com/hivesper/vue-prince/issues"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   },
   "main": "./dist/vue-prince.umd.js",
   "module": "./dist/vue-prince.es.js",

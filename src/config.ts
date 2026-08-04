@@ -3,6 +3,7 @@ import type { MaybeRefOrGetter } from 'vue'
 import type { ResourceListItem, ResourceSchemaField } from './api'
 import type { PrinceButtonType } from './button-props'
 import type { SpecFieldType } from './resource'
+import type { ResourceSort } from './sort'
 
 export type FieldComponentEntry = Component | { form?: Component; display?: Component }
 export type FieldComponentMap = Partial<Record<SpecFieldType | 'resource', FieldComponentEntry>>
@@ -18,6 +19,8 @@ export interface LayoutTableProps {
   labels: Record<string, string>
   resource: string
   onRowClick?: (item: ResourceListItem<Record<string, unknown>>) => void
+  sort?: ResourceSort | null
+  onSort?: (column: string) => void
 }
 
 export interface LayoutTabsProps {

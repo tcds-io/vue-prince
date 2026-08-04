@@ -1,5 +1,6 @@
 import type { ResourceListItem, ResourceListMetadata, ResourceSchemaField } from './api'
 import type { ResourceFieldDef } from './resource'
+import type { ResourceSort } from './sort'
 import type { ResolvedTab } from './pages/use-resource-tabs'
 
 export interface ResourceListPageProps<T = Record<string, unknown>> {
@@ -14,10 +15,12 @@ export interface ResourceListPageProps<T = Record<string, unknown>> {
   itemsMeta: ResourceListMetadata | null
   page: number
   search: Record<string, string>
+  sort: ResourceSort | null
   navigateToItem: (item: ResourceListItem<T>) => void
   goToPage: (p: number) => void
   createNew: () => void
   onSearch: (params: Record<string, string>) => void
+  onSort: (column: string) => void
   canCreate: boolean
 }
 
