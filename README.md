@@ -433,6 +433,66 @@ indicator. `ResourceListView` marks sortable headers with `.field--sortable`, th
 
 ---
 
+## Row selection
+
+`ResourceListView` can render a leading checkbox column for bulk operations. Selection is
+**controlled by the caller** — the table renders what you pass and reports intent back, it keeps no
+state of its own:
+
+```vue
+<template>
+  <ResourceListView
+    :items="items"
+    :schema="schema"
+    :loading="loading"
+    :error="error"
+    :selection="selection"
+    :on-toggle-selection="toggle"
+    :on-toggle-all-selection="toggleAll"
+  />
+</template>
+
+<script setup lang="ts">
+import type { ResourceId } from '@hivesper/vue-prince'
+import { ref } from 'vue'
+
+const selection = ref<ResourceId[]>([])
+
+const toggle = (id: ResourceId): void => {
+  selection.value = selection.value.includes(id)
+    ? selection.value.filter((selected) => selected !== id)
+    : [...selection.value, id]
+}
+
+// `selected` is the state the header checkbox is moving to.
+const toggleAll = (selected: boolean): void => {
+  const onPage = items.value.map((item) => item.id)
+  selection.value = selected
+    ? [...selection.value.filter((id) => !onPage.includes(id)), ...onPage]
+    : selection.value.filter((id) => !onPage.includes(id))
+}
+</script>
+```
+
+| Prop                   | Effect                                                                                |
+| ---------------------- | ------------------------------------------------------------------------------------- |
+| `selection`            | Ids that render as checked. Required to show the column                               |
+| `onToggleSelection`    | Called with a row id when its checkbox changes. Required to show the column           |
+| `onToggleAllSelection` | Called with the target state when the header checkbox changes. Omit for no header box |
+
+Both `selection` and `onToggleSelection` must be present — pass neither and the table renders exactly
+as before, so existing lists are unaffected.
+
+Because selection lives with the caller it survives paging and searching: `onToggleAllSelection`
+above only adds or removes the ids on the current page, leaving earlier picks intact. The header
+checkbox is checked when every row on the page is selected and indeterminate when only some are.
+
+The checkbox cell stops click propagation, so ticking a row does not fire `onRowClick` — a list can
+navigate on row click and select via the checkbox at the same time. Selected rows carry
+`.row--selected` for styling, and the cells carry `.field--selection`.
+
+---
+
 ## Custom field components
 
 Every field component receives `FieldProps` via `defineProps` and the value via `defineModel`:

@@ -274,4 +274,122 @@ describe('ResourceListView', () => {
       expect(cells).toContain('7')
     })
   })
+
+  describe('row selection', () => {
+    const selectionCheckboxes = (wrapper: ReturnType<typeof mountView>) =>
+      wrapper.findAll<HTMLInputElement>('.field--selection input[type="checkbox"]')
+
+    it('renders no selection column without the selection props', () => {
+      const wrapper = mountView()
+      expect(selectionCheckboxes(wrapper)).toHaveLength(0)
+    })
+
+    it('renders no selection column when only the selection is given', () => {
+      const wrapper = mountView({ selection: [] })
+      expect(selectionCheckboxes(wrapper)).toHaveLength(0)
+    })
+
+    it('renders a checkbox per row once selection is controlled', () => {
+      const wrapper = mountView({ selection: [], onToggleSelection: vi.fn() })
+      expect(selectionCheckboxes(wrapper)).toHaveLength(items.length)
+    })
+
+    it('checks only the rows present in the selection', () => {
+      const wrapper = mountView({ selection: [2], onToggleSelection: vi.fn() })
+      const checked = selectionCheckboxes(wrapper).map((box) => box.element.checked)
+      expect(checked).toEqual([false, true])
+    })
+
+    it('marks a selected row with the selected class', () => {
+      const wrapper = mountView({ selection: [1], onToggleSelection: vi.fn() })
+      const rows = wrapper.findAll('tbody tr').map((row) => row.classes())
+      expect(rows[0]).toContain('row--selected')
+      expect(rows[1]).not.toContain('row--selected')
+    })
+
+    it('calls onToggleSelection with the row id', async () => {
+      const onToggleSelection = vi.fn()
+      const wrapper = mountView({ selection: [], onToggleSelection })
+      await selectionCheckboxes(wrapper)[1].setValue(true)
+      expect(onToggleSelection).toHaveBeenCalledWith(2)
+    })
+
+    it('does not trigger onRowClick when the checkbox is clicked', async () => {
+      const onRowClick = vi.fn()
+      const wrapper = mountView({ selection: [], onToggleSelection: vi.fn(), onRowClick })
+      await selectionCheckboxes(wrapper)[0].trigger('click')
+      expect(onRowClick).not.toHaveBeenCalled()
+    })
+
+    it('renders no header checkbox without onToggleAllSelection', () => {
+      const wrapper = mountView({ selection: [], onToggleSelection: vi.fn() })
+      expect(wrapper.find('thead .field--selection input').exists()).toBe(false)
+    })
+
+    it('checks the header checkbox when every row is selected', () => {
+      const wrapper = mountView({
+        selection: [1, 2],
+        onToggleSelection: vi.fn(),
+        onToggleAllSelection: vi.fn(),
+      })
+      const header = wrapper.find<HTMLInputElement>('thead .field--selection input')
+      expect(header.element.checked).toBe(true)
+      expect(header.element.indeterminate).toBe(false)
+    })
+
+    it('marks the header checkbox indeterminate on a partial selection', () => {
+      const wrapper = mountView({
+        selection: [1],
+        onToggleSelection: vi.fn(),
+        onToggleAllSelection: vi.fn(),
+      })
+      const header = wrapper.find<HTMLInputElement>('thead .field--selection input')
+      expect(header.element.checked).toBe(false)
+      expect(header.element.indeterminate).toBe(true)
+    })
+
+    it('leaves the header checkbox unchecked when no row is selected', () => {
+      const wrapper = mountView({
+        selection: [],
+        onToggleSelection: vi.fn(),
+        onToggleAllSelection: vi.fn(),
+      })
+      const header = wrapper.find<HTMLInputElement>('thead .field--selection input')
+      expect(header.element.checked).toBe(false)
+      expect(header.element.indeterminate).toBe(false)
+    })
+
+    it('asks to select every row when the header checkbox is ticked', async () => {
+      const onToggleAllSelection = vi.fn()
+      const wrapper = mountView({
+        selection: [],
+        onToggleSelection: vi.fn(),
+        onToggleAllSelection,
+      })
+      await wrapper.find('thead .field--selection input').setValue(true)
+      expect(onToggleAllSelection).toHaveBeenCalledWith(true)
+    })
+
+    it('asks to clear the selection when the header checkbox is unticked', async () => {
+      const onToggleAllSelection = vi.fn()
+      const wrapper = mountView({
+        selection: [1, 2],
+        onToggleSelection: vi.fn(),
+        onToggleAllSelection,
+      })
+      await wrapper.find('thead .field--selection input').setValue(false)
+      expect(onToggleAllSelection).toHaveBeenCalledWith(false)
+    })
+
+    it('leaves the header checkbox unchecked when there are no rows at all', () => {
+      const wrapper = mountView({
+        items: [],
+        selection: [],
+        onToggleSelection: vi.fn(),
+        onToggleAllSelection: vi.fn(),
+      })
+      const header = wrapper.find<HTMLInputElement>('thead .field--selection input')
+      expect(header.element.checked).toBe(false)
+    })
+  })
 })

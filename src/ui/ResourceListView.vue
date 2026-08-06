@@ -8,6 +8,16 @@
         <table :class="['vue-resource', 'resource-table', resource && `${resource}-table`]">
           <thead>
             <tr>
+              <th v-if="selectable" class="field--selection">
+                <input
+                  v-if="onToggleAllSelection"
+                  type="checkbox"
+                  aria-label="Select all rows"
+                  :checked="allSelected"
+                  :indeterminate="someSelected && !allSelected"
+                  @change="onToggleAllSelection?.(!allSelected)"
+                />
+              </th>
               <th
                 v-for="field in schema"
                 :key="field.name"
@@ -41,9 +51,17 @@
             <tr
               v-for="item in items"
               :key="item.id"
-              :class="{ selectable: !!onRowClick }"
+              :class="{ selectable: !!onRowClick, 'row--selected': isSelected(item.id) }"
               @click="onRowClick?.(item)"
             >
+              <td v-if="selectable" class="field--selection" @click.stop>
+                <input
+                  type="checkbox"
+                  aria-label="Select row"
+                  :checked="isSelected(item.id)"
+                  @change="onToggleSelection?.(item.id)"
+                />
+              </td>
               <td
                 v-for="field in schema"
                 :key="field.name"
@@ -73,7 +91,7 @@
 
 <script setup lang="ts">
 import { computed, defineComponent } from 'vue'
-import type { ResourceListItem, ResourceSchemaField } from '../api'
+import type { ResourceId, ResourceListItem, ResourceSchemaField } from '../api'
 import type { ResourceFieldDef, ResourceItemAction } from '../resource'
 import { hasActionPermission } from '../resource'
 import type { ResourceSort } from '../sort'
@@ -94,6 +112,11 @@ const props = defineProps<{
   itemActions?: ResourceItemAction[]
   sort?: ResourceSort | null
   onSort?: (column: string) => void
+  // Selection is controlled by the caller: pass the currently selected ids plus a toggle to
+  // render the checkbox column. Omitting either leaves the table exactly as it was.
+  selection?: ResourceId[]
+  onToggleSelection?: (id: ResourceId) => void
+  onToggleAllSelection?: (selected: boolean) => void
 }>()
 
 // Renders the table unwrapped when no `layout.table` is configured, so the markup below
@@ -131,6 +154,18 @@ function resolveItemActions(item: ResourceListItem<Record<string, unknown>>) {
     onClick: () => a.onClick(item),
   }))
 }
+
+const selectable = computed(() => !!props.selection && !!props.onToggleSelection)
+
+function isSelected(id: ResourceId): boolean {
+  return props.selection?.includes(id) ?? false
+}
+
+const allSelected = computed(
+  () => props.items.length > 0 && props.items.every((item) => isSelected(item.id)),
+)
+
+const someSelected = computed(() => props.items.some((item) => isSelected(item.id)))
 
 function isSortable(name: string): boolean {
   return !!props.onSort && props.fields?.[name]?.list?.sortable === true
@@ -199,10 +234,35 @@ function tdStyle(name: string): Record<string, string> {
   text-align: right;
 }
 
+.vue-resource.resource-table th.field--selection,
+.vue-resource.resource-table td.field--selection {
+  width: 32px;
+  white-space: nowrap;
+  padding: 4px 8px;
+  text-align: left;
+}
+
+.vue-resource.resource-table .field--selection input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--prince-color-primary, #2563eb);
+  vertical-align: middle;
+}
+
 .vue-resource.resource-table td {
   padding: 8px 12px;
   border-bottom: 1px solid var(--prince-color-border, #dee2e6);
   vertical-align: middle;
+}
+
+.vue-resource.resource-table tbody tr.row--selected {
+  background: var(--prince-color-selected, #eff6ff);
+}
+
+.vue-resource.resource-table tbody tr.selectable.row--selected:hover {
+  background: var(--prince-color-selected-hover, #dbeafe);
 }
 
 .vue-resource.resource-table tbody tr:last-child td {
